@@ -1,0 +1,13 @@
+@import "/common/modules/AutomaticSettings/css/photonOptions.css";
+
+a.button {
+	appearance: button;
+	text-decoration: none;
+	color: unset;
+}
+
+ul.list li {
+	list-style-type: disc;
+	margin: unset;
+	padding: unset;
+}

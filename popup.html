@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="popup.css" />
+	<title>🎛️ Server Status</title>
+	<script defer src="common.js"></script>
+	<script defer src="popup.js"></script>
+</head>
+
+<body>
+	<!-- <h3>Server Status</h3> -->
+	<div><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button
+				type="button">ℹ️Information</button></a>
+		<button type="button" id="settings">⚙️ Settings</button>
+		<a href="https://www.tealdulcet.com/" target="_blank"><button type="button">❤️ Donate</button></a>
+	</div>
+	<hr style="width: 100%" />
+	<div class="no-data">
+		<p id="data">⟳ Refresh page to show.</p>
+	</div>
+	<div class="data hidden">
+		<table>
+			<tr>
+				<td id="status"><span id="code" title="Status"></span>&nbsp;<span id="line"></span></td>
+			</tr>
+			<tr>
+				<td><span title="Hostname/Domain">🌐</span>&nbsp;<span id="host"></span></td>
+			</tr>
+			<tr class="ip hidden">
+				<td><span class="ipv4 hidden"><abbr title="Internet Protocol version 4">IPv4</abbr> address: <span
+							id="ipv4"></span><br></span>
+					<span class="ipv6 hidden"><abbr title="Internet Protocol version 6">IPv6</abbr> address: <span
+							id="ipv6"></span></span>
+					<span class="cache hidden"><abbr title="Internet Protocol">IP</abbr> address: <span
+							id="ip"></span></span>
+				</td>
+			</tr>
+			<tr class="location hidden">
+				<td><span title="Server location">📍</span>&nbsp;<span id="location"></span></td>
+			</tr>
+			<tr class="blacklist hidden">
+				<td><span id="blacklist"></span></td>
+			</tr>
+			<tr>
+				<td>
+					<details>
+						<summary>⇅ <span id="number"></span> Requests (click to show)</summary>
+						<span id="requests">None</span>
+					</details>
+				</td>
+			</tr>
+			<tr class="no-content">
+				<td id="content"></td>
+			</tr>
+			<tr class="content hidden">
+				<td><span title="Load time">⏱️&nbsp;Load time</span>: <span id="load"></span>, <abbr
+						title="Time to first byte">TTFB</abbr>: <span id="ttfb"></span><br><span
+						title="First paint">🖌️&nbsp;First paint</span>: <span id="paint"></span></td>
+			</tr>
+			<tr class="content hidden">
+				<td><span title="Transfer size">⬇️</span>&nbsp;<span id="size"></span></td>
+			</tr>
+			<tr class="modified hidden">
+				<td><span title="Last modified">💾</span>&nbsp;<span id="modified"></span></td>
+			</tr>
+			<tr>
+				<td>Connection: <span id="state"></span></td>
+			</tr>
+			<tr class="certificate hidden">
+				<td><span title="Certificate expiration">⏲️</span>&nbsp;Certificate expiration:<br>
+					<span id="timer"></span><br>
+					<span id="expiration"></span>
+				</td>
+			</tr>
+			<tr class="certificate hidden">
+				<td>Certificate issuer:<br><span id="issuer"></span>&nbsp;&nbsp;(<span id="link"></span>)</td>
+			</tr>
+			<tr class="certificate hidden">
+				<td><span title="Protocol">↔️</span>&nbsp;<abbr title="Secure Sockets Layer">SSL</abbr>/<abbr
+						title="Transport Layer Security">TLS</abbr>
+					Protocol: <span id="protocol"></span></td>
+			</tr>
+			<tr class="certificate hidden">
+				<td><abbr title="HTTP Strict Transport Security">HSTS</abbr>: <span id="hsts"></span></td>
+			</tr>
+		</table>
+	</div>
+</body>
+
+</html>

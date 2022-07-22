@@ -1,0 +1,20 @@
+@import "/common/modules/AutomaticSettings/css/photonOptions.css";
+
+table {
+	border-collapse: collapse;
+}
+
+td,
+th {
+	border: 2px solid #000000;
+}
+
+.hidden {
+	display: none;
+}
+
+a.button {
+	appearance: button;
+	text-decoration: none;
+	color: unset;
+}

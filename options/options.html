@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="/common/common.css">
+	<link rel="stylesheet" href="options.css">
+
+	<!-- <script defer src="../common/common.js" type="module"></script> -->
+	<script defer src="./options.js" type="module"></script>
+</head>
+
+<body>
+	<div class="message-container">
+		<div id="messageTips" aria-label="info message" class="message-box info invisible fade-hide">
+			<span class="message-text"></span>
+			<a href="#">
+				<button type="button" class="message-action-button micro-button info invisible"></button>
+			</a>
+			<img class="icon-dismiss invisible" src="/common/img/close.svg" width="24" height="24" tabindex="0"></span>
+		</div>
+		<div id="messageInfo" aria-label="info message" class="message-box info invisible fade-hide">
+			<span class="message-text">Some settings are managed by your administrator and cannot be changed.</span>
+			<a href="#">
+				<button type="button" class="message-action-button micro-button info invisible"></button>
+			</a>
+			<img class="icon-dismiss invisible" src="/common/img/close.svg" width="24" height="24" tabindex="0"></span>
+		</div>
+		<div id="messageSuccess" aria-label="success message" class="message-box success invisible fade-hide">
+			<span class="message-text">That worked!</span>
+			<a href="#">
+				<button type="button" class="message-action-button micro-button success invisible"></button>
+			</a>
+			<img class="icon-dismiss invisible" src="/common/img/close.svg" width="24" height="24" tabindex="0"></span>
+		</div>
+		<div id="messageError" aria-label="error message" class="message-box error invisible fade-hide">
+			<span class="message-text">An error happened.</span>
+			<a href="#">
+				<button type="button" class="message-action-button micro-button error invisible"></button>
+			</a>
+			<img class="icon-dismiss invisible" src="/common/img/close-white.svg" width="24" height="24"
+				tabindex="0"></span>
+		</div>
+		<div id="messageWarning" aria-label="warning message" class="message-box warning invisible fade-hide">
+			<span class="message-text">There were some difficulties.</span>
+			<a href="#">
+				<button type="button" class="message-action-button micro-button warning invisible"></button>
+			</a>
+			<img class="icon-dismiss invisible" src="/common/img/close.svg" width="24" height="24" tabindex="0"></span>
+		</div>
+	</div>
+	<form>
+		<section>
+			<h3>Server Status</h3>
+			<p><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button type="button">ℹ️
+						Information</button></a>
+				<a href="https://www.tealdulcet.com/" target="_blank"><button type="button">❤️ Donate</button></a>
+			</p>
+		</section>
+
+		<section>
+			<h1>Toolbar</h1>
+
+			<ul>
+				<li>
+					<fieldset data-type="radiogroup" class="setting save-on-input" data-optiongroup="settings">
+						<legend>What to show in toolbar</legend>
+
+						<div class="line">
+							<input id="icon1" type="radio" name="icon" value="1">
+							<!-- <label for="icon1"></label> -->
+							<ul class="list">
+								<li>Icon: Flag for country of server location</li>
+								<li>Badge: Country code</li>
+							</ul>
+						</div>
+
+						<hr>
+
+						<div class="line">
+							<input id="icon2" type="radio" name="icon" value="2">
+							<!-- <label for="icon2"></label> -->
+							<ul class="list">
+								<li>Icon and badge: Days until certificate expiration</li>
+							</ul>
+						</div>
+
+						<hr>
+
+						<div class="line">
+							<input id="icon3" type="radio" name="icon" value="3">
+							<!-- <label for="icon3"></label> -->
+							<ul class="list">
+								<li>Icon: Days until certificate expiration</li>
+								<li>Badge: <abbr title="Secure Sockets Layer">SSL</abbr>/<abbr
+										title="Transport Layer Security">TLS</abbr> version</li>
+							</ul>
+						</div>
+
+						<hr>
+
+						<div class="line">
+							<input id="icon4" type="radio" name="icon" value="4">
+							<!-- <label for="icon4"></label> -->
+							<ul class="list">
+								<li>Icon and badge: <abbr title="Hypertext Transfer Protocol">HTTP</abbr> status code
+								</li>
+							</ul>
+						</div>
+
+						<hr>
+
+						<div class="line">
+							<input id="icon5" type="radio" name="icon" value="5">
+							<!-- <label for="icon5"></label> -->
+							<ul class="list">
+								<li>Icon: <abbr title="Hypertext Transfer Protocol">HTTP</abbr> status code</li>
+								<li>Badge: <abbr title="Hypertext Transfer Protocol">HTTP</abbr> version</li>
+							</ul>
+						</div>
+					</fieldset>
+					<ul>
+						<li>
+							<div class="line">
+								<input class="setting save-on-change" type="color" id="color" data-optiongroup="settings" name="color">
+								<label for="color">Default background color in toolbar</label>
+							</div>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h1>Location</h1>
+
+			<ul>
+				<li>
+					<fieldset data-type="radiogroup" class="setting save-on-input" data-optiongroup="settings">
+						<legend>Show the location for IP addresses</legend>
+						<span class="line indent helper-text">Requires the extension to periodically download a IP
+							geolocation database. Click <a
+								href="https://gitlab.com/tdulcet/ip-geolocation-dbs#database-comparison"
+								target="_blank">here</a>for a full comparison of the databases.</span>
+						<span class="line indent helper-text">Note that the databases do not have the location for all
+							IP addresses, so select the one with the most accuracy for your locations of interest. Users
+							with a very slow internet connection or limited memory (RAM) may want to select one of the
+							much smaller “Country” databases.</span>
+
+						<fieldset>
+							<legend>None:</legend>
+							<div class="line">
+								<input id="GeoDB0" type="radio" name="GeoDB" value="0">
+								<label for="GeoDB0"><strong>None</strong></label>
+							</div>
+						</fieldset>
+
+						<fieldset>
+							<legend>Country name and flag only:</legend>
+
+							<div class="line">
+								<input id="GeoDB1" type="radio" name="GeoDB" value="1">
+								<label for="GeoDB1"><strong>ip-location-db GeoFeed + Whois + ASN</strong></label>
+								<ul class="list">
+									<li>Updated Daily</li>
+								</ul>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB2" type="radio" name="GeoDB" value="2">
+								<label for="GeoDB2"><strong>iptoasn.com</strong></label>
+								<ul class="list">
+									<li>Updated Daily</li>
+								</ul>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB3" type="radio" name="GeoDB" value="3">
+								<label for="GeoDB3"><strong>DB-IP Lite</strong></label>
+								<ul class="list">
+									<li>Updated Monthly</li>
+								</ul>
+								<span class="line indent helper-text"><a href='https://db-ip.com/' target="_blank">IP
+										Geolocation by DB-IP</a></span>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB4" type="radio" name="GeoDB" value="4">
+								<label for="GeoDB4"><strong>IP2Location LITE</strong></label>
+								<ul class="list">
+									<li>Updated Monthly</li>
+								</ul>
+								<span class="line indent helper-text">This site or product includes IP2Location LITE
+									data available from <a href="https://lite.ip2location.com"
+										target="_blank">https://lite.ip2location.com</a>.</span>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB5" type="radio" name="GeoDB" value="5">
+								<label for="GeoDB5"><strong>GeoLite2</strong></label>
+								<ul class="list">
+									<li>Updated Weekly</li>
+								</ul>
+								<span class="line indent helper-text">This product includes GeoLite2 data created by
+									MaxMind, available from <a href="https://www.maxmind.com"
+										target="_blank">https://www.maxmind.com</a>.</span>
+
+							</div>
+						</fieldset>
+
+						<fieldset>
+							<legend>Full location with state/providence/region and city:</legend>
+							<span class="line indent helper-text">Note that these databases do not have the full
+								location for all IP addresses.</span>
+
+							<div class="line">
+								<input id="GeoDB6" type="radio" name="GeoDB" value="6">
+								<label for="GeoDB6"><strong>DB-IP Lite</strong></label>
+								<ul class="list">
+									<li>Updated Monthly</li>
+								</ul>
+								<span class="line indent helper-text"><a href='https://db-ip.com/' target="_blank">IP
+										Geolocation by DB-IP</a></span>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB7" type="radio" name="GeoDB" value="7">
+								<label for="GeoDB7"><strong>IP2Location LITE</strong></label>
+								<ul class="list">
+									<li>Updated Monthly</li>
+								</ul>
+								<span class="line indent helper-text">This site or product includes IP2Location LITE
+									data available from <a href="https://lite.ip2location.com"
+										target="_blank">https://lite.ip2location.com</a>.</span>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB8" type="radio" name="GeoDB" value="8">
+								<label for="GeoDB8"><strong>GeoLite2</strong></label>
+								<ul class="list">
+									<li>Updated Weekly</li>
+									<li>Two state/providence fields</li>
+									<li>Localized location</li>
+								</ul>
+								<span class="line indent helper-text">This product includes GeoLite2 data created by
+									MaxMind, available from <a href="https://www.maxmind.com"
+										target="_blank">https://www.maxmind.com</a>.</span>
+							</div>
+						</fieldset>
+					</fieldset>
+					<ul>
+						<li>
+							<div class="line">
+								<label for="update">Check for updated geolocation databases</label>
+								<select id="update" class="setting save-on-input" data-optiongroup="settings"name="update">
+									<option value="1">Daily</option>
+									<option value="2">Weekly</option>
+									<option value="3">Monthly</option>
+								</select>
+							</div>
+							<span class="line indent helper-text">Useful for users with a very slow or metered internet
+								connection.</span>
+						</li>
+
+						<li>
+							<div class="line">
+								<input class="setting save-on-change" type="checkbox" id="updateidle" data-optiongroup="settings" name="updateidle">
+								<label for="updateidle">Only check for updated geolocation databases when the system is
+									idle or locked</label>
+							</div>
+						</li>
+
+						<li>
+							<div class="line">
+								<label for="idle">Idle time</label>
+								<input class="setting save-on-change" type="number" id="idle" data-optiongroup="settings" name="idle" required>
+								seconds
+							</div>
+							<span class="line indent helper-text">Amount of idle time to wait before checking for
+								updated databases.</span>
+						</li>
+					</ul>
+				</li>
+
+				<li>
+					<div class="line">
+						<label for="map">Show link to map with the location of IP addresses</label>
+						<select id="map" class="setting save-on-input" data-optiongroup="settings" name="map">
+							<option value="0">None</option>
+							<option value="1">OpenStreetMap</option>
+							<option value="2">Google Maps</option>
+							<option value="3">Bing Maps</option>
+							<option value="4">MapQuest</option>
+							<option value="5">Apple Maps (requires Apple device)</option>
+						</select>
+					</div>
+					<span class="line indent helper-text">Requires one of the “Full location” geolocation databases
+						above. Clicking the link shares the coordinates with the selected service.</span>
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h1>Connections</h1>
+
+			<ul>
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="dns" data-optiongroup="settings" name="dns">
+						<label for="dns">Show all IP addresses in popup</label>
+					</div>
+					<span class="line indent helper-text">Use <abbr title="Domain Name System">DNS</abbr>to show all
+						<abbr title="Internet Protocol version 4">IPv4</abbr>and <abbr
+							title="Internet Protocol version 6">IPv6</abbr>addresses for the hostname, not just the one
+						used to connect.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="fullipv6" data-optiongroup="settings" name="fullipv6">
+						<label for="fullipv6">Show full/exploded <abbr title="Internet Protocol version 6">IPv6</abbr>
+							addresses in popup</label>
+					</div>
+					<span class="line indent helper-text">For example, show
+						<code>2001:0db8:0000:0000:0000:ff00:0042:8329</code>instead of
+						<code>2001:db8::ff00:42:8329</code>.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="blocked" data-optiongroup="settings" name="blocked">
+						<label for="blocked">Show failed and blocked requests/connections in the Requests table</label>
+					</div>
+					<span class="line indent helper-text">Show failed connections and those blocked by your browser
+						(such as with Firefox's <a
+							href="https://support.mozilla.org/kb/enhanced-tracking-protection-firefox-desktop"
+							target="_blank">Enhanced Tracking Protection</a>), other add-ons or your
+						administrator/network.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<label for="lookup">Show link to lookup IP addresses</label>
+						<select id="lookup" class="setting save-on-input" data-optiongroup="settings" name="lookup">
+							<option value="0">None</option>
+							<option value="1">Flagfox/Geotool</option>
+							<option value="2">IP2Location</option>
+						</select>
+					</div>
+					<span class="line indent helper-text">Clicking the link shares the IP address and hostname with the
+						selected service.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="suffix" data-optiongroup="settings" name="suffix">
+						<label for="suffix">Show the suffix for hostnames in popup</label>
+					</div>
+					<span class="line indent helper-text">Requires the extension to periodically download the <a
+							href="https://publicsuffix.org/" target="_blank">Public Suffix List</a>(PSL) from
+						Mozilla.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="https" data-optiongroup="settings" name="https">
+						<label for="https">Force <abbr title="Hypertext Transfer Protocol Secure">HTTPS</abbr> for
+							Hostname and IP addresses links</label>
+					</div>
+					<span class="line indent helper-text">This is automatically enabled in Firefox's <a
+							href="https://support.mozilla.org/kb/https-only-prefs" target="_blank">HTTPS-Only
+							Mode</a>.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="blacklist" data-optiongroup="settings" name="blacklist">
+						<label for="blacklist">Show whether the hostname or IP addresses are blacklisted in
+							popup</label>
+					</div>
+					<span class="line indent helper-text">Looks up the hostname and IP addresses in a <a
+							href="https://en.wikipedia.org/wiki/Domain_Name_System-based_blocklist" target="_blank">DNS
+							blacklist</a>(DNSBL). Click <a
+							href="https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists"
+							target="_blank">here</a>for a comparison of DNSBLs. Requires “Show all IP addresses”
+						above.</span>
+					<ul>
+						<li>
+							<div class="line">
+								<label for="domainblacklist">Domain Blacklist</label>
+								<input class="setting save-on-change" type="text" id="domainblacklist" data-optiongroup="settings" name="domainblacklist" required>
+							</div>
+							<span class="line indent helper-text">Defaults to the Spamhaus Domain Block List.</span>
+						</li>
+
+						<li>
+							<div class="line">
+								<label for="ipv4blacklist">IPv4 Blacklist</label>
+								<input class="setting save-on-change" type="text" id="ipv4blacklist" data-optiongroup="settings" name="ipv4blacklist" required>
+							</div>
+							<span class="line indent helper-text">Defaults to the Spamhaus Block List.</span>
+						</li>
+
+						<li>
+							<div class="line">
+								<label for="ipv6blacklist">IPv6 Blacklist</label>
+								<input class="setting save-on-change" type="text" id="ipv6blacklist" data-optiongroup="settings" name="ipv6blacklist" required>
+							</div>
+							<span class="line indent helper-text">Defaults to the Spamhaus Block List.</span>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h1>Certificates</h1>
+
+			<ul>
+				<li>
+					<div class="line">
+						<label for="warndays">Days to warn before certificate expiration</label>
+						<input class="setting save-on-change" type="number" id="warndays" data-optiongroup="settings" name="warndays" min="0" required>
+					</div>
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h1>Other</h1>
+
+			<ul>
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="send" data-optiongroup="settings" name="send">
+						<label for="send">Display Desktop notifications</label>
+					</div>
+				</li>
+			</ul>
+		</section>
+
+		<div>
+			<hr /><br />
+			<button type="button" id="resetButton">Reset all settings to defaults</button>
+		</div>
+	</form>
+</body>
+
+</html>
