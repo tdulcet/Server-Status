@@ -256,7 +256,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			} else {
 				atitle += securityInfo.hsts ? "Yes" : "No";
 			}
-			console.assert(!!header === securityInfo.hsts, "Error: HSTS", header, securityInfo.hsts);
+			// console.assert(!!header === securityInfo.hsts, "Error: HSTS", header, securityInfo.hsts);
 		} else {
 			// https://bugzilla.mozilla.org/show_bug.cgi?id=1778454
 			/* if (securityInfo.hsts) {

@@ -43,7 +43,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 
 ❤️ Please visit [tealdulcet.com](https://www.tealdulcet.com/) to support this extension and my other software development.
 
-🔜 This will soon be published to Addons.mozilla.org (AMO).
+⬇️ Download from [Addons.mozilla.org](https://addons.mozilla.org/firefox/addon/server-status/) (AMO).
 
 \* On servers which provide this information
 
