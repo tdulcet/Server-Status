@@ -314,7 +314,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
  * @param {Object} details
  * @returns {void}
  */
-function updateActiveTab(details) {
+async function updateActiveTab(details) {
 	if (details.frameId === 0) {
 		// console.log(details.url);
 		// console.log("tabs.onUpdated:", details.url, new URL(details.url).origin);
@@ -328,23 +328,28 @@ function updateActiveTab(details) {
 						updateIcon(details.tabId, tab);
 						// console.log(`Success: ${details.tabId}`, changeInfo.url);
 					} else {
-						const tab = { "details": null, "securityInfo": null, "requests": new Map() };
-						tabs.set(details.tabId, tab);
-						// certificateIcons[5]
-						setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
-						console.debug(aurl.protocol, aurl.origin, url.origin);
+						const tabInfo = await browser.tabs.get(details.tabId);
+						if (tabInfo.isInReaderMode) {
+							updateIcon(details.tabId, tab);
+						} else {
+							const tab = { "details": null, "securityInfo": null, "requests": new Map() };
+							tabs.set(details.tabId, tab);
+							// certificateIcons[5]
+							setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
+							console.debug("Access denied", aurl.protocol, aurl.origin, url.origin);
+						}
 					}
 				} else if (tab.error) {
 					setIcon(details.tabId, icons[1], `${TITLE}  \nError occurred for this “${aurl.protocol}” page`, null, null);
-					console.debug(aurl.protocol, aurl.origin, tab.error);
+					console.debug("Error occurred", aurl.protocol, aurl.origin, tab.error);
 				} else {
-					setIcon(details.tabId, tab.details ? icons[2] : icons[1], `${TITLE}  \nUnavailable${tab.details ? "" : " or Access denied"} for this “${aurl.protocol}” page`, null, null);
-					console.debug(aurl.protocol, aurl.origin);
+					setIcon(details.tabId, tab.details ? icons[0] : icons[1], `${TITLE}  \nUnavailable${tab.details ? "" : " or Access denied"} for this “${aurl.protocol}” page, try ⟳ refreshing the page`, null, null);
+					console.debug("Unavailable or Access denied", aurl.protocol, aurl.origin);
 				}
 			} else {
-				setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this “${aurl.protocol}” page`, null, null);
+				setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this “${aurl.protocol}” page, try ⟳ refreshing the page`, null, null);
 				// console.log(`Error: ${details.tabId}`, changeInfo.url);
-				console.debug(aurl.protocol, aurl.origin);
+				console.debug("Unavailable", aurl.protocol, aurl.origin);
 			}
 		} else {
 			setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this page`, null, null);
@@ -384,7 +389,7 @@ function beforeRequest(details) {
 			tabs.set(details.tabId, { "details": null, "requests": new Map() });
 			// certificateIcons[5]
 			setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
-			console.debug(details.tabId, aurl.origin);
+			console.debug("Access denied", details.tabId, aurl.origin);
 		}
 
 		const tab = tabs.get(details.tabId);
@@ -399,7 +404,10 @@ function beforeRequest(details) {
 }
 
 browser.webRequest.onBeforeRequest.addListener(beforeRequest,
-	{ urls: ["<all_urls>"] }
+	{ urls: ["<all_urls>"] },
+	// Blocking needed to show requests at browser startup: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest#requests_at_browser_startup
+	// https://bugzilla.mozilla.org/show_bug.cgi?id=1749871
+	["blocking"]
 );
 
 /**

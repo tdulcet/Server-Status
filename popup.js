@@ -415,7 +415,7 @@ function count(array) {
  */
 function outputtitle(array, str) {
 	const obj = count(array);
-	return Object.keys(obj).length > 1 ? Object.entries(obj).map(([key, value]) => `${value}: ${key}`).join("\n") : str || Object.keys(obj)[0];
+	return Object.keys(obj).length > 1 ? Object.entries(obj).map(([key, value]) => `${numberFormat.format(value)}: ${key}`).join("\n") : str || Object.keys(obj)[0];
 }
 
 /**
@@ -986,12 +986,12 @@ function getstatus(tabId) {
 					updatePopup(tabId, message.tab);
 				} else {
 					data.innerText = `${emojis[1]} Unavailable or Access denied for this page.\nNote that this add-on only works on HTTP/HTTPS pages.`;
-					console.debug(message);
+					console.debug("Unavailable or Access denied", message);
 				}
 			} else {
 				data.textContent = `${emojis[1]} Unavailable for this page.`;
 				// console.log(`Error: ${tabId}`);
-				console.debug(message);
+				console.debug("Unavailable", message);
 			}
 			// console.log(message);
 		}
