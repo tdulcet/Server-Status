@@ -30,7 +30,7 @@ const regionNames = new Intl.DisplayNames([], { type: "region" });
 
 // IPv4 address regular expression
 const IPv4 = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])`;
-const IPv4RE = RegExp(`^${IPv4}$`);
+const IPv4RE = RegExp(`^${IPv4}$`, "u");
 
 // IPv6 address regular expression
 // \p{ASCII_Hex_Digit}
@@ -63,14 +63,14 @@ function expand(address) {
  */
 function IPv4toInt(address) {
 	const octets = address.split(".").map((x) => parseInt(x, 10));
-	return ((octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3]) >>> 0;
+	return (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3] >>> 0;
 }
 
 /**
  * Convert IPv6 address to BigInt.
  *
  * @param {string} address
- * @returns {BigInt}
+ * @returns {bigint}
  */
 function IPv6toInt(address) {
 	return BigInt(`0x${address}`);
@@ -85,8 +85,8 @@ function IPv6toInt(address) {
 function outputseconds(sec_num) {
 	// console.log(sec_num);
 	const d = Math.floor(sec_num / 86400);
-	const h = Math.floor((sec_num % 86400) / 3600);
-	const m = Math.floor((sec_num % 86400 % 3600) / 60);
+	const h = Math.floor(sec_num % 86400 / 3600);
+	const m = Math.floor(sec_num % 86400 % 3600 / 60);
 	const s = sec_num % 86400 % 3600 % 60;
 	const text = [];
 	if (d > 0) {
@@ -119,7 +119,7 @@ function outputdate(date) {
  *
  * @param {Date} date1
  * @param {Date} date2
- * @returns {void}
+ * @returns {string}
  */
 function outputdateRange(date1, date2) {
 	return dateTimeFormat4.formatRange(new Date(date1), new Date(date2));
@@ -157,12 +157,12 @@ function earth(longitude) {
  * Get certificate issuer.
  *
  * @param {string} issuer
- * @returns {Object.<string, string>}
+ * @returns {Object}
  */
 function getissuer(issuer) {
 	// console.log(issuer);
 	const aissuer = {};
-	for (const item of issuer.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/).filter((x, i) => i % 2 !== 0)) {
+	for (const item of issuer.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/u).filter((x, i) => i % 2 !== 0)) {
 		const [type, value] = item.split("=");
 		aissuer[type] = value;
 	}
@@ -173,12 +173,12 @@ function getissuer(issuer) {
  * Get HSTS header directives.
  *
  * @param {string} header
- * @returns {Object.<string, string>}
+ * @returns {Object}
  */
 function getHSTS(header) {
 	// console.log(header);
 	const aheader = {};
-	for (const item of header.split(/([\w-]+(?:=(?:"[^"]+"|[^";\s]*))?)(?:\s*;\s*|$)/).filter((x, i) => i % 2 !== 0)) {
+	for (const item of header.split(/([\w-]+(?:=(?:"[^"]+"|[^";\s]*))?)(?:\s*;\s*|$)/u).filter((x, i) => i % 2 !== 0)) {
 		const [type, value] = item.split("=");
 		aheader[type.toLowerCase()] = value && value[0] === '"' && value[-1] === '"' ? value.slice(1, -1) : value;
 	}

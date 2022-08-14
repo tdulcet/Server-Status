@@ -46,12 +46,29 @@ function notification(title, message) {
 	console.log(title, message);
 	if (SEND) {
 		browser.notifications.create({
-			"type": "basic",
-			"iconUrl": browser.runtime.getURL("icons/icon_128.png"),
-			"title": title,
-			"message": message
+			type: "basic",
+			iconUrl: browser.runtime.getURL("icons/icon_128.png"),
+			title,
+			message
 		});
 	}
+}
+
+/**
+ * Encode XML.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function encodeXML(text) {
+	const map = {
+		"&": "&amp;",
+		"<": "&lt;",
+		">": "&gt;",
+		'"': "&quot;",
+		"'": "&apos;"
+	};
+	return text.replace(/[&<>"']/gu, (m) => map[m]);
 }
 
 /**
@@ -74,14 +91,14 @@ function outputunit(number, scale) {
 	}
 
 	let anumber = Math.abs(number);
-	anumber += anumber < 10 ? 0.0005 : (anumber < 100 ? 0.005 : (anumber < 1000 ? 0.05 : 0.5));
+	anumber += anumber < 10 ? 0.0005 : anumber < 100 ? 0.005 : anumber < 1000 ? 0.05 : 0.5;
 
 	if (number !== 0 && anumber < 1000 && power > 0) {
 		str = number.toString();
 
 		const length = 5 + (number < 0 ? 1 : 0);
 		if (str.length > length) {
-			const prec = anumber < 10 ? 3 : (anumber < 100 ? 2 : 1);
+			const prec = anumber < 10 ? 3 : anumber < 100 ? 2 : 1;
 			str = number.toFixed(prec);
 		}
 	} else {
@@ -109,8 +126,8 @@ function outputunit(number, scale) {
 function getSecondsAsDigitalClock(sec_num) {
 	// console.log(now);
 	const d = Math.floor(sec_num / 86400);
-	const h = Math.floor((sec_num % 86400) / 3600);
-	const m = Math.floor((sec_num % 86400 % 3600) / 60);
+	const h = Math.floor(sec_num % 86400 / 3600);
+	const m = Math.floor(sec_num % 86400 % 3600 / 60);
 	const s = sec_num % 86400 % 3600 % 60;
 	let text = "";
 	if (d > 0) {
@@ -167,7 +184,7 @@ function outputtimer(time, now) {
  */
 function timerTick(time) {
 	const now = Date.now();
-	const delay = 1000 - (now % 1000);
+	const delay = 1000 - now % 1000;
 
 	timeoutID = setTimeout(() => {
 		outputtimer(time, now + delay);
@@ -234,7 +251,7 @@ function lookup(hostname, address) {
  *
  * @param {string} address
  * @param {string} hostname
- * @param {string} [current]
+ * @param {string|null} [current]
  * @param {number} [v]
  * @returns {string}
  */
@@ -243,8 +260,8 @@ function outputaddress(address, hostname, current, v) {
 	const ipv6 = IPv6RE.test(address);
 	console.assert(ipv4 || ipv6, "Error: Unknown IP address", address);
 
-	const aaddress = (v === 6 || ipv6) && FULLIPv6 ? expand(address).join(":") : address;
-	let text = `<a href="http${HTTPS ? "s" : ""}://${(v === 6 || ipv6) ? `[${address}]` : address}" target="_blank">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
+	const aaddress = v === 6 || ipv6 && FULLIPv6 ? expand(address).join(":") : address;
+	let text = `<a href="http${HTTPS ? "s" : ""}://${v === 6 || ipv6 ? `[${address}]` : address}" target="_blank">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
 	if (LOOKUP) {
 		text += `&nbsp;${lookup(hostname, address)}`;
 	}
@@ -270,8 +287,8 @@ function outputaddresses(addresses, hostname, current, v) {
  *
  * @param {string} hostname
  * @param {string} protocol
- * @param {boolean} ipv4
- * @param {boolean} ipv6
+ * @param {boolean} [ipv4]
+ * @param {boolean} [ipv6]
  * @returns {string}
  */
 function outputhost(hostname, protocol, ipv4, ipv6) {
@@ -287,9 +304,9 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 			const domain = labels.slice(-(alabels.length + 1)).join(".");
 			const subdomain = labels.slice(0, -(alabels.length + 1)).join(".");
 			return `<a href="${protocol}//${hostname}" target="_blank">${subdomain ? `${subdomain}.` : ""}<strong>${domain}</strong></a>`;
-		} else {
-			console.error("Error: Hostname has invalid suffix", hostname);
 		}
+		console.error("Error: Hostname has invalid suffix", hostname);
+
 	}
 
 	return `<a href="${protocol}//${hostname}" target="_blank">${hostname}</a>`;
@@ -330,7 +347,7 @@ function status(statusCode) {
  * Get emoji and URL classification.
  *
  * @param {Object} details
- * @returns {Object.<string, string>}
+ * @returns {Object}
  */
 function getClassification(details) {
 	const emojis = [];
@@ -489,11 +506,11 @@ function checkblacklists(hostname, ipv4s, ipv6s) {
 /**
  * Get the geolocation.
  *
- * @param {string} addresses
- * @returns {Object}
+ * @param {string[]} addresses
+ * @returns {Promise<Object[]>}
  */
 function getGeoIP(addresses) {
-	return browser.runtime.sendMessage({ "type": LOCATION, "addresses": addresses }).then((message, sender) => {
+	return browser.runtime.sendMessage({ type: LOCATION, addresses }).then((message, sender) => {
 		if (message.type === LOCATION) {
 			// console.log(message);
 			return message.locations;
@@ -512,7 +529,7 @@ function copyToClipboard(text/* , link */) {
 	// https://github.com/mdn/webextensions-examples/blob/master/context-menu-copy-link-with-types/clipboard-helper.js
 	/* const atext = encodeXML(text);
 	const alink = encodeXML(link);
-	
+
 	const html = `<a href="${alink}">${atext}</a>`; */
 
 	navigator.clipboard.writeText(text);
@@ -540,7 +557,7 @@ function click(event) {
 	const url = event.target.href;
 	// console.log(url);
 
-	browser.tabs.create({ "url": url, openerTabId: tabId }).catch((error) => {
+	browser.tabs.create({ url, openerTabId: tabId }).catch((error) => {
 		console.error(error);
 
 		browser.tabs.create({ openerTabId: tabId });
@@ -622,7 +639,7 @@ function updateTable(requests) {
 						const versions = arequest.map((obj) => obj.securityInfo.protocolVersion);
 						cell = row.insertCell();
 						cell.title = outputtitle(versions, securityInfo.protocolVersion);
-						cell.textContent = Array.from(new Set(versions.map((str) => (str?.startsWith("TLS") ? str.slice(3) : str)))).join("\n");
+						cell.textContent = Array.from(new Set(versions.map((str) => str?.startsWith("TLS") ? str.slice(3) : str))).join("\n");
 
 						cell = row.insertCell();
 						if (details.responseHeaders) {
@@ -681,11 +698,11 @@ function updateTable(requests) {
 							promises.push(getGeoIP(addresses).then((infos) => {
 								// console.log(details.ip, addresses, infos);
 
-								cell.title = outputtitle(infos.map((x) => (x?.country ? outputlocation(x) : "Unknown Location")));
+								cell.title = outputtitle(infos.map((x) => x?.country ? outputlocation(x) : "Unknown Location"));
 								if (MAP) {
-									cell.innerHTML = Array.from(new Set(infos), (x, i) => (x?.country ? (i ? " " : "") + countryCode(x.country) + (x.lat != null && x.lon != null ? map(x.lat, x.lon) : "") : emojis[2])).join("");
+									cell.innerHTML = Array.from(new Set(infos), (x, i) => x?.country ? (i ? " " : "") + countryCode(x.country) + (x.lat != null && x.lon != null ? map(x.lat, x.lon) : "") : emojis[2]).join("");
 								} else {
-									cell.textContent = Array.from(new Set(infos.map((x) => x?.country)), (x) => (x ? countryCode(x) : emojis[2])).join("");
+									cell.textContent = Array.from(new Set(infos.map((x) => x?.country)), (x) => x ? countryCode(x) : emojis[2]).join("");
 								}
 							}));
 						} else if (details.fromCache) {
@@ -741,7 +758,7 @@ function updatePopup(tabId, tab) {
 
 	document.getElementById("content").textContent = "Loading…";
 
-	browser.tabs.sendMessage(tabId, { "type": CONTENT }).then((message) => {
+	browser.tabs.sendMessage(tabId, { type: CONTENT }).then((message) => {
 		if (message.type === CONTENT) {
 			const navigation = message.navigation[0];
 			const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
@@ -811,10 +828,8 @@ function updatePopup(tabId, tab) {
 				});
 			}
 			document.querySelector(".ip").classList.remove("hidden");
-		} else {
-			if (DNS && BLACKLIST) {
-				checkblacklists(details.ip);
-			}
+		} else if (DNS && BLACKLIST) {
+			checkblacklists(details.ip);
 		}
 	}
 
@@ -918,7 +933,7 @@ function updatePopup(tabId, tab) {
 				} else {
 					hsts.textContent = securityInfo.hsts ? `${emojis[4]}\xa0Yes` : `${certificateEmojis[3]}\xa0No`;
 				}
-				console.assert(!!header === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
+				console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
 				// https://bugzilla.mozilla.org/show_bug.cgi?id=1778454
 				/* if (securityInfo.hsts) {
@@ -960,7 +975,7 @@ function updatePopup(tabId, tab) {
  * @returns {void}
  */
 function getstatus(tabId) {
-	browser.runtime.sendMessage({ "type": POPUP, "tabId": tabId }).then((message, sender) => {
+	browser.runtime.sendMessage({ type: POPUP, tabId }).then((message, sender) => {
 		if (message.type === POPUP) {
 			const data = document.getElementById("data");
 
@@ -1010,7 +1025,7 @@ document.getElementById("settings").addEventListener("click", (event) => {
  * Init.
  *
  * @public
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function init() {
 	const platformInfo = await browser.runtime.getPlatformInfo();

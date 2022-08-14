@@ -17,15 +17,13 @@ let GeoIPv6 = null;
  *
  * @param {string} title
  * @param {string} message
- * @param {number} date
  * @returns {void}
  */
-function notification(title, message, date) {
+function notification(title, message) {
 	const response = {
-		"type": NOTIFICATION,
-		"title": title,
-		"message": message,
-		"eventTime": date
+		type: NOTIFICATION,
+		title,
+		message
 	};
 	// console.log(response);
 
@@ -38,7 +36,7 @@ function notification(title, message, date) {
  * @param {string} url
  * @param {number} v
  * @param {string} [cache]
- * @returns {Promise}
+ * @returns {Promise<Array>}
  */
 function agetGeoIP(url, v, cache) {
 	const alabel = `${label}${v}`;
@@ -57,7 +55,7 @@ function agetGeoIP(url, v, cache) {
 
 			console.timeLog(alabel);
 
-			let GEOIP = text.split("\n").filter((r) => r.length).map((r) => r.split(/("[^"]+"|[^",]*)(?:,|$)/).filter((x, i) => i % 2 !== 0).map((x) => (x[0] === '"' && x[-1] === '"' ? x.slice(1, -1) : x)));
+			let GEOIP = text.split("\n").filter((r) => r.length).map((r) => r.split(/("[^"]+"|[^",]*)(?:,|$)/u).filter((x, i) => i % 2 !== 0).map((x) => x[0] === '"' && x[-1] === '"' ? x.slice(1, -1) : x));
 			// console.log(GEOIP);
 
 			console.timeLog(alabel);
@@ -96,11 +94,11 @@ function agetGeoIP(url, v, cache) {
 			const modified = response.headers.get("Last-Modified");
 			// console.log(Array.from(response.headers.entries()), modified);
 			return [GEOIP, modified];
-		} else {
-			console.error(response);
-			console.timeEnd(alabel);
-			return Promise.reject();
 		}
+		console.error(response);
+		console.timeEnd(alabel);
+		return Promise.reject();
+
 	});
 }
 
@@ -108,9 +106,9 @@ function agetGeoIP(url, v, cache) {
  * Get the geolocation databases.
  *
  * @param {number} date
- * @param {Object[]} languages
+ * @param {string[]} languages
  * @param {string} [cache]
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function getGeoLoc(date, languages, cache) {
 	const URL = "https://gitlab.com/tdulcet/ip-geolocation-dbs/-/raw/main/";
@@ -173,7 +171,7 @@ async function getGeoLoc(date, languages, cache) {
 		console.log(GeoIPv4.length, GeoIPv6.length, date);
 
 		const message = {
-			"type": BACKGROUND
+			type: BACKGROUND
 		};
 
 		// The full location databases are too large to store in local storage, which is limited to 255 MiB
@@ -199,8 +197,8 @@ async function getGeoLoc(date, languages, cache) {
 /**
  * Parse the geolocation databases.
  *
- * @param {Array[]} IPv4
- * @param {Array[]} IPv6
+ * @param {Array<number|string>[]} IPv4
+ * @param {Array<number|bigint|string>[]} IPv6
  * @returns {void}
  */
 function parseGeoLoc(IPv4, IPv6) {
@@ -227,14 +225,14 @@ function parseGeoLoc(IPv4, IPv6) {
 	GeoIPv4 = Object.freeze(IPv4);
 	GeoIPv6 = Object.freeze(IPv6);
 
-	postMessage({ "type": WORKER });
+	postMessage({ type: WORKER });
 }
 
 /**
  * Search the geolocation database.
  *
  * @param {Object[]} GeoIP
- * @param {number|BigInt} address
+ * @param {number|bigint} address
  * @returns {Object}
  */
 function searchGeoIP(GeoIP, address) {
@@ -281,7 +279,7 @@ function searchGeoIP(GeoIP, address) {
  * Get the geolocation.
  *
  * @param {string} address
- * @returns {Object}
+ * @returns {Object|null}
  */
 function getGeoIP(address) {
 	if (GeoIPv4 && GeoIPv6) {
@@ -335,8 +333,8 @@ addEventListener("message", (event) => {
 		getGeoLoc(message.date, message.languages);
 	} else if (message.type === LOCATION) {
 		const response = {
-			"type": LOCATION,
-			"locations": message.addresses.map((x) => getGeoIP(x))
+			type: LOCATION,
+			locations: message.addresses.map((x) => getGeoIP(x))
 		};
 		// console.log(response);
 		event.ports[0].postMessage(response);

@@ -73,11 +73,11 @@ function notification(title, message, date) {
 	console.log(title, message, date && new Date(date));
 	if (settings.send) {
 		browser.notifications.create({
-			"type": "basic",
-			"iconUrl": browser.runtime.getURL("icons/icon_128.png"),
-			"title": title,
-			"message": message,
-			"eventTime": date
+			type: "basic",
+			iconUrl: browser.runtime.getURL("icons/icon_128.png"),
+			title,
+			message,
+			eventTime: date
 		});
 	}
 }
@@ -95,11 +95,11 @@ function getImageData(emoji, size) {
 	const canvas = window.OffscreenCanvas ? new OffscreenCanvas(size, size) : document.createElement("canvas");
 	const ctx = canvas.getContext("2d");
 
-	ctx.font = `${size * (IS_LINUX && !IS_CHROME ? 63 / 64 : (IS_ANDROID ? 57 / 64 : 7 / 8))}px serif`;
+	ctx.font = `${size * (IS_LINUX && !IS_CHROME ? 63 / 64 : IS_ANDROID ? 57 / 64 : 7 / 8)}px serif`;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
 	// draw the emoji
-	ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : (IS_LINUX ? 59 / 96 : 13 / 24)));
+	ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : IS_LINUX ? 59 / 96 : 13 / 24));
 
 	return ctx.getImageData(0, 0, size, size);
 }
@@ -121,30 +121,30 @@ function getIcons(emoji) {
 /**
  * Set the browserAction icon.
  *
- * @param {number} tabId
- * @param {ImageData} icon
- * @param {string} title
- * @param {string} text
- * @param {string} backgroundColor
+ * @param {number|null} tabId
+ * @param {ImageData|null} icon
+ * @param {string|null} title
+ * @param {string|null} text
+ * @param {string|null} backgroundColor
  * @returns {void}
  */
 function setIcon(tabId, icon, title, text, backgroundColor) {
 	// console.log(tabId, icon, title, text, backgroundColor);
 	browser.browserAction.setIcon({
 		imageData: icon,
-		"tabId": tabId
+		tabId
 	});
 	browser.browserAction.setTitle({
-		"title": title,
-		"tabId": tabId
+		title,
+		tabId
 	});
 	browser.browserAction.setBadgeText({
-		"text": text,
-		"tabId": tabId
+		text,
+		tabId
 	});
 	browser.browserAction.setBadgeBackgroundColor({
-		"color": backgroundColor,
-		"tabId": tabId
+		color: backgroundColor,
+		tabId
 	});
 }
 
@@ -152,9 +152,10 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
  * Update the browserAction icon.
  *
  * @param {number} tabId
- * @param {Object} details
- * @param {Object} securityInfo
- * @returns {void}
+ * @param {Object} tab
+ * @param {Object} tab.details
+ * @param {Object} tab.securityInfo
+ * @returns {Promise<void>}
  */
 async function updateIcon(tabId, { details, securityInfo }) {
 	// console.log(tabId, details, securityInfo);
@@ -298,7 +299,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			text = statusCode.toString();
 		} else {
 			// Get HTTP version
-			const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/;
+			const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
 			const regexResult = re.exec(details.statusLine);
 			console.assert(regexResult, "Error: Unknown Status", details.statusLine);
 			text = regexResult ? regexResult[1] : details.statusLine;
@@ -312,7 +313,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
  * Update active tab.
  *
  * @param {Object} details
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function updateActiveTab(details) {
 	if (details.frameId === 0) {
@@ -332,7 +333,7 @@ async function updateActiveTab(details) {
 						if (tabInfo.isInReaderMode) {
 							updateIcon(details.tabId, tab);
 						} else {
-							const tab = { "details": null, "securityInfo": null, "requests": new Map() };
+							const tab = { details: null, securityInfo: null, requests: new Map() };
 							tabs.set(details.tabId, tab);
 							// certificateIcons[5]
 							setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
@@ -383,10 +384,10 @@ function beforeRequest(details) {
 		const aurl = new URL(details.url);
 
 		if (details.type === "main_frame") {
-			tabs.set(details.tabId, { "details": details, "requests": new Map() });
+			tabs.set(details.tabId, { details, requests: new Map() });
 			// console.log("beforeRequest", details);
 		} else if (!tabs.has(details.tabId)) {
-			tabs.set(details.tabId, { "details": null, "requests": new Map() });
+			tabs.set(details.tabId, { details: null, requests: new Map() });
 			// certificateIcons[5]
 			setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
 			console.debug("Access denied", details.tabId, aurl.origin);
@@ -414,7 +415,7 @@ browser.webRequest.onBeforeRequest.addListener(beforeRequest,
  * Save request details and security info.
  *
  * @param {Object} details
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function headersReceived(details) {
 	// console.log(details);
@@ -423,7 +424,7 @@ async function headersReceived(details) {
 			const main_frame = details.type === "main_frame";
 			const securityInfo = await browser.webRequest.getSecurityInfo(
 				details.requestId,
-				{ "certificateChain": main_frame, "rawDER": main_frame }
+				{ certificateChain: main_frame, rawDER: main_frame }
 			);
 			// console.log(securityInfo);
 
@@ -482,7 +483,7 @@ browser.webRequest.onHeadersReceived.addListener(headersReceived,
 			// tab.error = details.error;
 			// console.log("completed", details);
 		}
-		
+
 		const requests = tab.requests.get(aurl.hostname);
 
 		if (!requests || !requests.has(details.requestId)) {
@@ -553,7 +554,7 @@ function punycode(hostname) {
  * Get the public suffix list.
  *
  * @param {number} date
- * @returns {Promise}
+ * @returns {Promise<void>}
  */
 function getPSL(date) {
 	console.time(label);
@@ -569,7 +570,7 @@ function getPSL(date) {
 			const PSL = Object.freeze(text.split("\n").map((r) => r.trim()).filter((r) => r.length && !r.startsWith("//")));
 			console.log(PSL.length, date);
 
-			browser.storage.local.set({ "PSL": { PSL, date } });
+			browser.storage.local.set({ PSL: { PSL, date } });
 
 			console.timeLog(label);
 
@@ -641,7 +642,7 @@ function traverse(obj) {
 			const length = Object.keys(obj[s]).length;
 			let temp = "";
 
-			if (length > 1 || (length === 1 && !obj[s].leaf)) {
+			if (length > 1 || length === 1 && !obj[s].leaf) {
 				if (obj[s].leaf) {
 					temp += String.raw`(?:${traverse(obj[s])}\.)?`;
 				} else {
@@ -698,7 +699,7 @@ function createRegEx(arr) {
 /**
  * Parse public suffix list and create regular expressions.
  *
- * @param {string[]} PSL
+ * @param {readonly string[]} PSL
  * @returns {void}
  */
 function parsePSL(PSL) {
@@ -720,8 +721,8 @@ function parsePSL(PSL) {
 
 	console.log(suffixes, exceptions);
 
-	suffixes = new RegExp(String.raw`(?:^|\.)(${suffixes})$`);
-	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`);
+	suffixes = new RegExp(String.raw`(?:^|\.)(${suffixes})$`, "u");
+	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`, "u");
 
 	// console.log(suffixes, exceptions);
 }
@@ -730,15 +731,15 @@ function parsePSL(PSL) {
  * Get the geolocation databases.
  *
  * @param {number} date
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function getGeoLoc(date) {
 	setIcon(null, icons[7], `${TITLE}  \nUpdating geolocation databases`, null, null);
 
 	const message = {
-		"type": WORKER,
-		"date": date,
-		"languages": await browser.i18n.getAcceptLanguages()
+		type: WORKER,
+		date,
+		languages: await browser.i18n.getAcceptLanguages()
 	};
 	// console.log(message);
 	worker.postMessage(message);
@@ -752,8 +753,8 @@ async function getGeoLoc(date) {
  */
 function getGeoIP(address) {
 	const message = {
-		"type": LOCATION,
-		"addresses": [address]
+		type: LOCATION,
+		addresses: [address]
 	};
 	// console.log(message);
 
@@ -799,7 +800,7 @@ browser.idle.onStateChanged.addListener(newState);
  * Handle alarm.
  *
  * @param {Object} alarmInfo
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function handleAlarm(alarmInfo) {
 	if (alarmInfo.name === ALARM1) {
@@ -830,19 +831,19 @@ browser.alarms.onAlarm.addListener(handleAlarm);
 function sendSettings(details, tab) {
 	if (popup && details.tabId === popup) {
 		const response = {
-			"type": POPUP,
-			"WARNDAYS": settings.warndays,
-			"FULLIPv6": settings.fullipv6,
-			"BLOCKED": settings.blocked,
-			"HTTPS": settings.https || httpsOnlyMode === "always" || (httpsOnlyMode === "private_browsing" && details.incognito),
-			"DNS": settings.dns,
-			"SUFFIX": settings.suffix,
-			"GeoDB": settings.GeoDB,
-			"MAP": settings.map,
-			"LOOKUP": settings.lookup,
-			"SEND": settings.send,
-			"details": details,
-			"tab": tab
+			type: POPUP,
+			WARNDAYS: settings.warndays,
+			FULLIPv6: settings.fullipv6,
+			BLOCKED: settings.blocked,
+			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
+			DNS: settings.dns,
+			SUFFIX: settings.suffix,
+			GeoDB: settings.GeoDB,
+			MAP: settings.map,
+			LOOKUP: settings.lookup,
+			SEND: settings.send,
+			details,
+			tab
 		};
 		// console.log(response);
 
@@ -942,7 +943,7 @@ function setSettings(asettings) {
 					} else if (message.type === BACKGROUND) {
 						setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
 
-						browser.storage.local.set({ "GEOIP": message.GEOIP });
+						browser.storage.local.set({ GEOIP: message.GEOIP });
 					}
 				});
 			}
@@ -954,9 +955,9 @@ function setSettings(asettings) {
 				const GEOIP = item.GEOIP;
 
 				const message = {
-					"type": BACKGROUND,
-					"GeoDB": settings.GeoDB,
-					"languages": await browser.i18n.getAcceptLanguages()
+					type: BACKGROUND,
+					GeoDB: settings.GeoDB,
+					languages: await browser.i18n.getAcceptLanguages()
 				};
 
 				if (GEOIP && GEOIP.GeoDB === settings.GeoDB) {
@@ -996,7 +997,7 @@ function setSettings(asettings) {
 /**
  * Init.
  *
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function init() {
 	const platformInfo = await browser.runtime.getPlatformInfo();
@@ -1027,24 +1028,24 @@ browser.runtime.onMessage.addListener((message, sender) => {
 		popup = message.tabId;
 		const tab = tabs.get(message.tabId);
 		const response = {
-			"type": POPUP,
-			"WARNDAYS": settings.warndays,
-			"FULLIPv6": settings.fullipv6,
-			"BLOCKED": settings.blocked,
-			"HTTPS": settings.https || httpsOnlyMode === "always" || (httpsOnlyMode === "private_browsing" && tab.details.incognito),
-			"DNS": settings.dns,
-			"BLACKLIST": settings.blacklist,
-			"DOMAINBLACKLISTS": settings.domainblacklists,
-			"IPv4BLACKLISTS": settings.ipv4blacklists,
-			"IPv6BLACKLISTS": settings.ipv6blacklists,
-			"SUFFIX": settings.suffix,
-			"suffixes": suffixes,
-			"exceptions": exceptions,
-			"GeoDB": settings.GeoDB,
-			"MAP": settings.map,
-			"LOOKUP": settings.lookup,
-			"SEND": settings.send,
-			"tab": tab
+			type: POPUP,
+			WARNDAYS: settings.warndays,
+			FULLIPv6: settings.fullipv6,
+			BLOCKED: settings.blocked,
+			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,
+			DNS: settings.dns,
+			BLACKLIST: settings.blacklist,
+			DOMAINBLACKLISTS: settings.domainblacklists,
+			IPv4BLACKLISTS: settings.ipv4blacklists,
+			IPv6BLACKLISTS: settings.ipv6blacklists,
+			SUFFIX: settings.suffix,
+			suffixes,
+			exceptions,
+			GeoDB: settings.GeoDB,
+			MAP: settings.map,
+			LOOKUP: settings.lookup,
+			SEND: settings.send,
+			tab
 		};
 		// console.log(response);
 		return Promise.resolve(response);

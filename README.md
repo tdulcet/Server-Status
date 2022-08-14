@@ -136,6 +136,7 @@ Pull requests welcome! Ideas for contributions:
 * Test the browserAction icon on more systems
 	* ⭐ Help needed to test on macOS
 * Convert to [Manifest V3](https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/) (MV3)
+* Refactor into more modules
 * Improve the popup design
 * Add more information to the popup
 	* Add key length (see [bug 1778473](https://bugzilla.mozilla.org/show_bug.cgi?id=1778473))
@@ -152,6 +153,7 @@ Pull requests welcome! Ideas for contributions:
 * Add support for more IP geolocation databases (see [here](https://gitlab.com/tdulcet/ip-geolocation-dbs#contributing))
 * Improve the performance
 * Show the server location on a globe
+* Show a list of the number of requests for each country for all pages (suggested by Daniel Connelly)
 * Show requests that occurred outside a tab
 * Add support for Chromium
 	* `webRequest.getSecurityInfo()` is not yet supported (see [bug 628819](https://bugs.chromium.org/p/chromium/issues/detail?id=628819))
