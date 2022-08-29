@@ -11,6 +11,7 @@ const aIPv6RE = RegExp(String.raw`^\[${IPv6}\]$`, "u");
 let WARNDAYS = 3;
 let BLOCKED = true;
 let FULLIPv6 = false;
+let COMPACTIPv6 = false;
 let HTTPS = false;
 let SUFFIX = true;
 let GeoDB = 1;
@@ -166,7 +167,7 @@ function outputtimer(time, now) {
 		if (days > WARNDAYS) {
 			color = "green";
 		} else {
-			color = "yellow";
+			color = "gold"; // "yellow"
 		}
 	} else {
 		text = "Expired";
@@ -260,8 +261,8 @@ function outputaddress(address, hostname, current, v) {
 	const ipv6 = IPv6RE.test(address);
 	console.assert(ipv4 || ipv6, "Error: Unknown IP address", address);
 
-	const aaddress = v === 6 || ipv6 && FULLIPv6 ? expand(address).join(":") : address;
-	let text = `<a href="http${HTTPS ? "s" : ""}://${v === 6 || ipv6 ? `[${address}]` : address}" target="_blank">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
+	const aaddress = v === 6 || ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? encodeXML(outputbase85(IPv6toInt(expand(address).join("")))) : address : address;
+	let text = `<a href="http${HTTPS ? "s" : ""}://${v === 6 || ipv6 ? `[${address}]` : address}" target="_blank" class="${v === 6 || ipv6 ? "ipv6" : "ipv4"}">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
 	if (LOOKUP) {
 		text += `&nbsp;${lookup(hostname, address)}`;
 	}
@@ -337,7 +338,7 @@ function status(statusCode) {
 	} else if (statusCode >= 300 && statusCode < 400) {
 		emoji = statusEmojis[2];
 	} else {
-		// I'm a teapot
+		// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
 		emoji = statusCode === 418 ? statusEmojis[4] : statusEmojis[3];
 	}
 	return emoji;
@@ -625,7 +626,7 @@ function updateTable(requests) {
 							if (days > WARNDAYS) {
 								color = "green";
 							} else {
-								color = "yellow";
+								color = "gold"; // "yellow"
 							}
 						} else {
 							title += `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
@@ -639,7 +640,7 @@ function updateTable(requests) {
 						const versions = arequest.map((obj) => obj.securityInfo.protocolVersion);
 						cell = row.insertCell();
 						cell.title = outputtitle(versions, securityInfo.protocolVersion);
-						cell.textContent = Array.from(new Set(versions.map((str) => str?.startsWith("TLS") ? str.slice(3) : str))).join("\n");
+						cell.textContent = Array.from(new Set(versions.map((str) => str?.startsWith("TLS") ? str.slice("TLS".length) : str))).join("\n");
 
 						cell = row.insertCell();
 						if (details.responseHeaders) {
@@ -983,6 +984,7 @@ function getstatus(tabId) {
 				if (message.tab.details) {
 					WARNDAYS = message.WARNDAYS;
 					FULLIPv6 = message.FULLIPv6;
+					COMPACTIPv6 = message.COMPACTIPv6;
 					BLOCKED = message.BLOCKED;
 					HTTPS = message.HTTPS;
 					DNS = message.DNS;
@@ -1042,6 +1044,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 		if (details.tabId === tabId) {
 			WARNDAYS = message.WARNDAYS;
 			FULLIPv6 = message.FULLIPv6;
+			COMPACTIPv6 = message.COMPACTIPv6;
 			BLOCKED = message.BLOCKED;
 			HTTPS = message.HTTPS;
 			DNS = message.DNS;

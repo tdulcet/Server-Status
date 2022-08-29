@@ -18,3 +18,11 @@ a.button {
 	text-decoration: none;
 	color: unset;
 }
+
+a.ipv4 {
+	color: purple;
+}
+
+a.ipv6 {
+	color: teal;
+}

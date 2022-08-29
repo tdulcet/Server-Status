@@ -18,6 +18,7 @@ const defaultSettings = {
 		warndays: 3, // Days
 		dns: true,
 		fullipv6: false,
+		compactipv6: false,
 		blocked: true,
 		GeoDB: "8",
 		update: "1",

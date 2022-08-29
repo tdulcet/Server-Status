@@ -11,6 +11,9 @@ const WORKER = "worker";
 const emojis = Object.freeze(["🧩", "ℹ️", "❓", "🌐", "✔️", "✖️", "⏳", "⬇️"]);
 const certificateEmojis = Object.freeze(["🔓", "🔒", "⚠️", "❌", "⛔", "🛡️"]);
 const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", "🫖"]);
+const digitEmojis = Object.freeze([...Array(10)].map((x, i) => `${i}️⃣`));
+
+const base85 = Object.freeze(Array.from("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"));
 
 const dateTimeFormat1 = new Intl.DateTimeFormat([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
 const dateTimeFormat2 = new Intl.DateTimeFormat([], { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
@@ -36,6 +39,26 @@ const IPv4RE = RegExp(`^${IPv4}$`, "u");
 // \p{ASCII_Hex_Digit}
 const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
 const IPv6RE = RegExp(`^${IPv6}$`, "u");
+
+/**
+ * Output IP address in base 85
+ * RFC 1924: https://datatracker.ietf.org/doc/html/rfc1924
+ *
+ * @param {bigint} number
+ * @returns {string}
+ */
+function outputbase85(number) {
+	const base = 85n;
+	let str = "";
+
+	do {
+		str = base85[number % base] + str;
+
+		number /= base;
+	} while (number > 0n);
+
+	return str;
+}
 
 /**
  * Expand IPv6 address.

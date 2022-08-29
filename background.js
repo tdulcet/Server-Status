@@ -25,6 +25,7 @@ const settings = {
 	warndays: null, // Days
 	dns: null,
 	fullipv6: null,
+	compactipv6: null,
 	blocked: null,
 	GeoDB: null,
 	update: null,
@@ -49,6 +50,7 @@ let IS_LINUX = null;
 let icons = null;
 let certificateIcons = null;
 let statusIcons = null;
+let digitIcons = null;
 const flagIcons = {};
 
 let httpsOnlyMode = null;
@@ -165,7 +167,24 @@ async function updateIcon(tabId, { details, securityInfo }) {
 	let backgroundColor = null;
 
 	if (details.ip) {
-		title.push(`IP address:  ${details.ip}`);
+		const ipv4 = IPv4RE.test(details.ip);
+		const ipv6 = IPv6RE.test(details.ip);
+		console.assert(ipv4 || ipv6, "Error: Unknown IP address", details.ip);
+		title.push(`IP address:  ${ipv6 ? settings.fullipv6 ? expand(details.ip).join(":") : settings.compactipv6 ? outputbase85(IPv6toInt(expand(details.ip).join(""))) : details.ip : details.ip}`);
+
+		if (settings.icon === 6) {
+			if (ipv4) {
+				icon = digitIcons[4];
+				text = "v4";
+				backgroundColor = "red";
+			} else if (ipv6) {
+				icon = digitIcons[6];
+				text = "v6";
+				backgroundColor = "green";
+			}
+		}
+	} else if (settings.icon === 6) {
+		icon = details.fromCache ? icons[3] : icons[2];
 	}
 
 	if (settings.GeoDB) {
@@ -215,7 +234,8 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			// sec > 0 ? outputdateRange(start, end) : outputdate(end)
 			title.push(`Certificate:  ${sec > 0 ? "Expires" : "Expired"} ${rtf.format(days, "day")} (${dateTimeFormat4.format(new Date(end))})`);
 			title.push(`Issuer:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} ${countryCode(aissuer.C)}` : ""}`);
-			if (settings.icon === 2 || settings.icon === 3) {
+
+			if (settings.icon === 2) {
 				if (sec > 0) {
 					if (days > settings.warndays) {
 						icon = certificateIcons[1];
@@ -228,10 +248,28 @@ async function updateIcon(tabId, { details, securityInfo }) {
 					icon = certificateIcons[3];
 					backgroundColor = "red";
 				}
-				if (settings.icon === 2) {
-					text = days === 0 ? `< ${numberFormat.format(1)}` : numberFormat.format(days);
+				text = days === 0 ? `< ${numberFormat.format(1)}` : numberFormat.format(days);
+			} else if (settings.icon === 3) {
+				const version = securityInfo.protocolVersion;
+				if (version.startsWith("TLSv")) {
+					const [major, minor] = version.slice("TLSv".length).split(".").map((x) => parseInt(x, 10));
+					if (major === 1) {
+						icon = minor < digitIcons.length ? digitIcons[minor] : icons[2];
+						if (minor === 0 || minor === 1) {
+							backgroundColor = "red";
+						} else if (minor === 2) {
+							backgroundColor = "blue";
+						} else if (minor >= 3) {
+							backgroundColor = "green";
+						}
+					} else if (major > 1) {
+						icon = icons[2];
+						backgroundColor = settings.color;
+					}
+					text = version.slice("TLS".length);
 				} else {
-					text = securityInfo.protocolVersion.startsWith("TLS") ? securityInfo.protocolVersion.slice(3) : securityInfo.protocolVersion;
+					icon = icons[2];
+					text = version;
 					backgroundColor = settings.color;
 				}
 			}
@@ -279,7 +317,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 		title.push(atitle);
 	}
 
-	if (settings.icon === 4 || settings.icon === 5) {
+	if (settings.icon === 4) {
 		const statusCode = details.statusCode;
 		if (statusCode >= 100 && statusCode < 200) {
 			icon = statusIcons[0];
@@ -291,18 +329,37 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			icon = statusIcons[2];
 			backgroundColor = "yellow";
 		} else {
-			// I'm a teapot
+			// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
 			icon = statusCode === 418 ? statusIcons[4] : statusIcons[3];
 			backgroundColor = "red";
 		}
-		if (settings.icon === 4) {
-			text = statusCode.toString();
+		text = statusCode.toString();
+	} else if (settings.icon === 5) {
+		// Get HTTP version
+		const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
+		const regexResult = re.exec(details.statusLine);
+		console.assert(regexResult, "Error: Unknown Status", details.statusLine);
+		if (regexResult) {
+			const version = regexResult[1];
+			const [major, minor] = version.split(".").map((x) => parseInt(x, 10));
+			icon = major < digitIcons.length ? digitIcons[major] : icons[2];
+			if (major === 0) {
+				backgroundColor = "red";
+			} else if (major === 1) {
+				if (minor === 0) {
+					backgroundColor = "red";
+				} else {
+					backgroundColor = "blue";
+				}
+			} else if (major === 2) {
+				backgroundColor = "teal";
+			} else if (major >= 3) {
+				backgroundColor = "green";
+			}
+			text = version;
 		} else {
-			// Get HTTP version
-			const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
-			const regexResult = re.exec(details.statusLine);
-			console.assert(regexResult, "Error: Unknown Status", details.statusLine);
-			text = regexResult ? regexResult[1] : details.statusLine;
+			icon = icons[2];
+			text = details.statusLine;
 			backgroundColor = settings.color;
 		}
 	}
@@ -834,6 +891,7 @@ function sendSettings(details, tab) {
 			type: POPUP,
 			WARNDAYS: settings.warndays,
 			FULLIPv6: settings.fullipv6,
+			COMPACTIPv6: settings.compactipv6,
 			BLOCKED: settings.blocked,
 			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
 			DNS: settings.dns,
@@ -863,6 +921,7 @@ function sendSettings(details, tab) {
 function setSettings(asettings) {
 	settings.warndays = asettings.warndays;
 	settings.fullipv6 = asettings.fullipv6;
+	settings.compactipv6 = asettings.compactipv6;
 	settings.blocked = asettings.blocked;
 	settings.https = asettings.https;
 	const GeoDB = parseInt(asettings.GeoDB, 10);
@@ -1004,7 +1063,7 @@ async function init() {
 	IS_ANDROID = platformInfo.os === "android";
 	IS_LINUX = platformInfo.os === "linux";
 
-	[icons, certificateIcons, statusIcons] = [emojis, certificateEmojis, statusEmojis].map((emoji) => Object.freeze(emoji.map(getIcons)));
+	[icons, certificateIcons, statusIcons, digitIcons] = [emojis, certificateEmojis, statusEmojis, digitEmojis].map((emoji) => Object.freeze(emoji.map((e) => getIcons(e))));
 
 	browser.browserAction.setIcon({
 		imageData: icons[0]
@@ -1031,6 +1090,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			type: POPUP,
 			WARNDAYS: settings.warndays,
 			FULLIPv6: settings.fullipv6,
+			COMPACTIPv6: settings.compactipv6,
 			BLOCKED: settings.blocked,
 			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,
 			DNS: settings.dns,

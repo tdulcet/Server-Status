@@ -1,3 +1,5 @@
+[![Actions Status](https://github.com/tdulcet/Server-Status/workflows/CI/badge.svg?branch=main)](https://github.com/tdulcet/Server-Status/actions)
+
 # Server Status
 Quickly view basic info about every webpage
 
@@ -32,10 +34,11 @@ Hover over almost everything in the popup, especially in the Requests table, to 
 
 * Flag for country of server location (default)
 	* Badge: Country code
+* Internet Protocol version
 * Days left until certificate expiration
-	* Badge: Same or SSL/TLS version
+* SSL/TLS version
 * HTTP status code
-	* Badge: Same or HTTP version
+* HTTP major version
 
 Hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date and HSTS status.
 
