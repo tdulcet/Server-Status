@@ -44,6 +44,8 @@ const settings = {
 
 const tabs = new Map();
 
+const notifications = new Map();
+
 let IS_ANDROID = null;
 let IS_LINUX = null;
 
@@ -84,6 +86,18 @@ function notification(title, message, date) {
 	}
 }
 
+browser.notifications.onClicked.addListener((notificationId) => {
+	const url = notifications.get(notificationId);
+
+	if (url) {
+		browser.tabs.create({ url });
+	}
+});
+
+browser.notifications.onClosed.addListener((notificationId) => {
+	notifications.delete(notificationId);
+});
+
 /**
  * Creates icon using native emoji.
  * Adapted from: https://stackoverflow.com/a/56313229 and https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/browserAction/setIcon#Examples
@@ -110,7 +124,7 @@ function getImageData(emoji, size) {
  * Create icons.
  *
  * @param {string} emoji
- * @returns {Object}
+ * @returns {Object.<number, ImageData>}
  */
 function getIcons(emoji) {
 	const icons = {};
@@ -162,7 +176,7 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
 async function updateIcon(tabId, { details, securityInfo }) {
 	// console.log(tabId, details, securityInfo);
 	let icon = null;
-	const title = [`Status:  ${details.statusLine}`];
+	const title = [`𝗦𝘁𝗮𝘁𝘂𝘀:  ${details.statusLine}`]; // Status
 	let text = null;
 	let backgroundColor = null;
 
@@ -170,7 +184,13 @@ async function updateIcon(tabId, { details, securityInfo }) {
 		const ipv4 = IPv4RE.test(details.ip);
 		const ipv6 = IPv6RE.test(details.ip);
 		console.assert(ipv4 || ipv6, "Error: Unknown IP address", details.ip);
-		title.push(`IP address:  ${ipv6 ? settings.fullipv6 ? expand(details.ip).join(":") : settings.compactipv6 ? outputbase85(IPv6toInt(expand(details.ip).join(""))) : details.ip : details.ip}`);
+		if (ipv4) {
+			// IPv4 address
+			title.push(`𝗜𝗣𝘃𝟰 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${details.ip}`);
+		} else if (ipv6) {
+			// IPv6 address
+			title.push(`𝗜𝗣𝘃𝟲 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${settings.fullipv6 ? expand(details.ip).join(":") : settings.compactipv6 ? outputbase85(IPv6toInt(expand(details.ip).join(""))) : details.ip}`);
+		}
 
 		if (settings.icon === 6) {
 			if (ipv4) {
@@ -193,7 +213,8 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			console.log(details.ip, info);
 
 			const country = info?.country;
-			title.push(`Server location:  ${country ? `${outputlocation(info)} ${countryCode(country)}${info.lon != null ? ` ${earth(info.lon)}` : ""}` : "Unknown"}`);
+			// Server location
+			title.push(`𝗦𝗲𝗿𝘃𝗲𝗿 𝗹𝗼𝗰𝗮𝘁𝗶𝗼𝗻:  ${country ? `${outputlocation(info)} (${country}) ${countryCode(country)}${info.lon != null ? ` ${earth(info.lon)}` : ""}` : "Unknown"}`);
 
 			if (settings.icon === 1) {
 				if (country) {
@@ -212,16 +233,26 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			icon = details.fromCache ? icons[3] : icons[2];
 		}
 	} else if (settings.icon === 1) {
-		title.push("Error: Geolocation database disabled");
+		title.unshift("Error: Geolocation database disabled");
 		icon = certificateIcons[3];
 	}
 
+	let state = "";
 	if (securityInfo.state === "insecure") {
-		title.push("Insecure");
+		state = "Insecure";
 		if (settings.icon === 2 || settings.icon === 3) {
 			icon = certificateIcons[0];
 		}
-	} else {
+	} else if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
+		state = getmessage(securityInfo);
+	} else if (securityInfo.state === "weak") {
+		state = `Weak${securityInfo.weaknessReasons ? ` (${securityInfo.weaknessReasons})` : ""}`;
+	}
+	if (state) {
+		// Connection
+		title.push(`𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗶𝗼𝗻:  ${state}`);
+	}
+	if (securityInfo.state !== "insecure") {
 		if (securityInfo.certificates.length) {
 			const certificate = securityInfo.certificates[0];
 			// const start = certificate.validity.start;
@@ -231,9 +262,13 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			const issuer = certificate.issuer;
 			const aissuer = getissuer(issuer);
 			// console.log(end, days, new Date(end));
+			// Certificate expiration
 			// sec > 0 ? outputdateRange(start, end) : outputdate(end)
-			title.push(`Certificate:  ${sec > 0 ? "Expires" : "Expired"} ${rtf.format(days, "day")} (${dateTimeFormat4.format(new Date(end))})`);
-			title.push(`Issuer:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} ${countryCode(aissuer.C)}` : ""}`);
+			title.push(`𝗖𝗲𝗿𝘁𝗶𝗳𝗶𝗰𝗮𝘁𝗲:  ${sec > 0 ? "Expires" : "Expired"} ${rtf.format(days, "day")} (${dateTimeFormat4.format(new Date(end))})`);
+			// Certificate issuer
+			title.push(`𝗜𝘀𝘀𝘂𝗲𝗿:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} (${aissuer.C}) ${countryCode(aissuer.C)}` : ""}`);
+			// SSL/TLS protocol
+			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}`);
 
 			if (settings.icon === 2) {
 				if (sec > 0) {
@@ -275,31 +310,27 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			}
 		}
 		if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
-			const message = getmessage(securityInfo);
-			if (message) {
-				title.push(message);
-			}
 			if (settings.icon === 2 || settings.icon === 3) {
 				icon = certificateIcons[3];
 				backgroundColor = "red";
 			}
 		}
-		let atitle = "HSTS:  ";
+		let atitle = "";
 		if (details.responseHeaders) {
 			// console.log(details.responseHeaders);
 			const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
 			if (header) {
 				const aheader = getHSTS(header.value);
 				// console.log(header, aheader);
-				atitle += `Yes (${outputseconds(parseInt(aheader["max-age"], 10))})`;
+				atitle += `✔ Yes (${outputseconds(parseInt(aheader["max-age"], 10))})`;
 			} else {
-				atitle += securityInfo.hsts ? "Yes" : "No";
+				atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
 			}
 			// console.assert(!!header === securityInfo.hsts, "Error: HSTS", header, securityInfo.hsts);
 		} else {
 			// https://bugzilla.mozilla.org/show_bug.cgi?id=1778454
 			/* if (securityInfo.hsts) {
-				atitle += "Yes";
+				atitle += "✔ Yes";
 				if (details.responseHeaders) {
 					// console.log(details.responseHeaders);
 					const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
@@ -310,11 +341,12 @@ async function updateIcon(tabId, { details, securityInfo }) {
 					}
 				}
 			} else {
-				atitle += "No";
+				atitle += "✖ No";
 			} */
-			atitle += securityInfo.hsts ? "Yes" : "No";
+			atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
 		}
-		title.push(atitle);
+		// HSTS
+		title.push(`𝗛𝗦𝗧𝗦:  ${atitle}`);
 	}
 
 	if (settings.icon === 4) {
@@ -338,7 +370,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 		// Get HTTP version
 		const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
 		const regexResult = re.exec(details.statusLine);
-		console.assert(regexResult, "Error: Unknown Status", details.statusLine);
+		console.assert(regexResult, "Error: Unknown HTTP Status", details.statusLine);
 		if (regexResult) {
 			const version = regexResult[1];
 			const [major, minor] = version.split(".").map((x) => parseInt(x, 10));
@@ -378,6 +410,7 @@ async function updateActiveTab(details) {
 		// console.log("tabs.onUpdated:", details.url, new URL(details.url).origin);
 		if (details.tabId && details.tabId !== TAB_ID_NONE) {
 			const aurl = new URL(details.url);
+			const title = aurl.protocol === "http:" || aurl.protocol === "https:" ? ", try ⟳ refreshing the page" : "";
 			if (tabs.has(details.tabId)) {
 				const tab = tabs.get(details.tabId);
 				if (tab.details && tab.details.statusLine) {
@@ -393,19 +426,19 @@ async function updateActiveTab(details) {
 							const tab = { details: null, securityInfo: null, requests: new Map() };
 							tabs.set(details.tabId, tab);
 							// certificateIcons[5]
-							setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
+							setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page${title}`, null, null);
 							console.debug("Access denied", aurl.protocol, aurl.origin, url.origin);
 						}
 					}
 				} else if (tab.error) {
-					setIcon(details.tabId, icons[1], `${TITLE}  \nError occurred for this “${aurl.protocol}” page`, null, null);
+					setIcon(details.tabId, icons[1], `${TITLE}  \nError occurred for this “${aurl.protocol}” page: ${tab.error}`, null, null);
 					console.debug("Error occurred", aurl.protocol, aurl.origin, tab.error);
 				} else {
-					setIcon(details.tabId, tab.details ? icons[0] : icons[1], `${TITLE}  \nUnavailable${tab.details ? "" : " or Access denied"} for this “${aurl.protocol}” page, try ⟳ refreshing the page`, null, null);
+					setIcon(details.tabId, tab.details ? icons[0] : icons[1], `${TITLE}  \nUnavailable${tab.details ? "" : " or Access denied"} for this “${aurl.protocol}” page${title}`, null, null);
 					console.debug("Unavailable or Access denied", aurl.protocol, aurl.origin);
 				}
 			} else {
-				setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this “${aurl.protocol}” page, try ⟳ refreshing the page`, null, null);
+				setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this “${aurl.protocol}” page${title}`, null, null);
 				// console.log(`Error: ${details.tabId}`, changeInfo.url);
 				console.debug("Unavailable", aurl.protocol, aurl.origin);
 			}
@@ -688,7 +721,7 @@ function suffix(strs) {
 /**
  * Traverse tree of objects to create RegEx.
  *
- * @param {Object} obj
+ * @param {Object.<string, Object|boolean>} obj
  * @returns {string}
  */
 function traverse(obj) {
@@ -806,7 +839,7 @@ async function getGeoLoc(date) {
  * Get the geolocation.
  *
  * @param {string} address
- * @returns {Object}
+ * @returns {Promise<Object|null>}
  */
 function getGeoIP(address) {
 	const message = {
@@ -1130,3 +1163,34 @@ browser.runtime.onMessage.addListener((message, sender) => {
 		}
 	}
 });
+
+browser.runtime.onInstalled.addListener((details) => {
+	console.log(details);
+	const manifest = browser.runtime.getManifest();
+	switch (details.reason) {
+		case "install":
+			notification(`🎉 ${manifest.name} installed`, `Thank you for installing the “${TITLE}” add-on!\nVersion: ${manifest.version}\n\nOpen the options/preferences page to configure this extension.`);
+			break;
+		case "update":
+			if (settings.send) {
+				browser.notifications.create({
+					type: "basic",
+					iconUrl: browser.runtime.getURL("icons/icon_128.png"),
+					title: `✨ ${manifest.name} updated`,
+					message: `The “${TITLE}” add-on has been updated to version ${manifest.version}. Click to see the release notes.\n\n❤️ Huge thanks to the generous donors that have allowed me to continue to work on this extension!`
+				}).then(async (notificationId) => {
+					if (browser.runtime.getBrowserInfo) {
+						const browserInfo = await browser.runtime.getBrowserInfo();
+
+						if (browserInfo.name !== "Thunderbird") {
+							const url = `https://addons.mozilla.org/firefox/addon/server-status/versions/${manifest.version}`;
+							notifications.set(notificationId, url);
+						}
+					}
+				});
+			}
+			break;
+	}
+});
+
+browser.runtime.setUninstallURL("https://forms.gle/hEPfPo2tRsfSHoxD7");

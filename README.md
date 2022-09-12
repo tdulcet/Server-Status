@@ -16,7 +16,7 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 * Transfer size
 * \*Last modified
 * Certificate issuer and expiration date
-* SSL/TLS version
+* SSL/TLS protocol
 * [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) (HSTS) status
 * Number of requests and a Requests table with a row for each hostname/domain:
 	* Number of connections
@@ -38,9 +38,9 @@ Hover over almost everything in the popup, especially in the Requests table, to 
 * Days left until certificate expiration
 * SSL/TLS version
 * HTTP status code
-* HTTP major version
+* HTTP version
 
-Hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date and HSTS status.
+Hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol and HSTS status.
 
 To monitor the status of one or more servers, please see the [Remote Servers Status Monitoring](https://github.com/tdulcet/Remote-Servers-Status) script.
 
@@ -64,6 +64,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 * Highlights the suffix for hostnames in the popup using Mozilla's [Public Suffix List](https://publicsuffix.org/) (PSL)
 * The IP databases and PSL are automatically downloaded and updated directly, without needing to update the entire extension
 	* This allows users to enjoy much faster and more frequent updates and thus more accurate information
+* Use a keyboard shortcut to quickly open the popup (by default <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd>)
 * Shows failed and blocked requests/connections in the Requests table
 * Shows certificate start/end dates and a countdown
 * Button to view the full certificate chain in Firefox's `about:certificate` [certificate viewer](https://github.com/april/certainly-something)
@@ -158,6 +159,7 @@ Pull requests welcome! Ideas for contributions:
 * Show the server location on a globe
 * Show a list of the number of requests for each country for all pages (suggested by Daniel Connelly)
 * Show requests that occurred outside a tab
+* Allow installing in Firefox for Android from AMO (see [here](https://github.com/mozilla-mobile/fenix/issues/20736)) and sync settings (see [bug 1625257](https://bugzilla.mozilla.org/show_bug.cgi?id=1625257))
 * Add support for Chromium
 	* `webRequest.getSecurityInfo()` is not yet supported (see [bug 628819](https://bugs.chromium.org/p/chromium/issues/detail?id=628819))
 * Localize the add-on

@@ -34,9 +34,9 @@ function notification(title, message) {
  * Get the geolocation database.
  *
  * @param {string} url
- * @param {number} v
+ * @param {4|6} v
  * @param {string} [cache]
- * @returns {Promise<Array>}
+ * @returns {Promise<[Array<number|bigint|string|null>[], string|null]>}
  */
 function agetGeoIP(url, v, cache) {
 	const alabel = `${label}${v}`;
@@ -197,8 +197,8 @@ async function getGeoLoc(date, languages, cache) {
 /**
  * Parse the geolocation databases.
  *
- * @param {Array<number|string>[]} IPv4
- * @param {Array<number|bigint|string>[]} IPv6
+ * @param {Array<[number, number, string]|[number, number, string, string, string, number|null, number|null]|[number, number, string, string, string, string, number|null, number|null]>} IPv4
+ * @param {Array<[bigint, bigint, string]|[bigint, bigint, string, string, string, number|null, number|null]|[bigint, bigint, string, string, string, string, number|null, number|null]>} IPv6
  * @returns {void}
  */
 function parseGeoLoc(IPv4, IPv6) {
@@ -231,9 +231,9 @@ function parseGeoLoc(IPv4, IPv6) {
 /**
  * Search the geolocation database.
  *
- * @param {Object[]} GeoIP
+ * @param {Array<[number|bigint, number|bigint, string]|[number|bigint, number|bigint, string, string, string, number|null, number|null]|[number|bigint, number|bigint, string, string, string, string, number|null, number|null]>} GeoIP
  * @param {number|bigint} address
- * @returns {Object}
+ * @returns {{start: number|bigint, end: number|bigint, country: string, state2?: string, state1?: string, city?: string, lat?: number|null, lon?: number|null}|null}
  */
 function searchGeoIP(GeoIP, address) {
 	let min = 0;
@@ -279,7 +279,7 @@ function searchGeoIP(GeoIP, address) {
  * Get the geolocation.
  *
  * @param {string} address
- * @returns {Object|null}
+ * @returns {{start: number|bigint, end: number|bigint, country: string, state2?: string, state1?: string, city?: string, lat?: number|null, lon?: number|null}|null}
  */
 function getGeoIP(address) {
 	if (GeoIPv4 && GeoIPv6) {

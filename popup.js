@@ -253,16 +253,17 @@ function lookup(hostname, address) {
  * @param {string} address
  * @param {string} hostname
  * @param {string|null} [current]
- * @param {number} [v]
+ * @param {boolean} [ipv4]
+ * @param {boolean} [ipv6]
  * @returns {string}
  */
-function outputaddress(address, hostname, current, v) {
-	const ipv4 = IPv4RE.test(address);
-	const ipv6 = IPv6RE.test(address);
+function outputaddress(address, hostname, current, ipv4, ipv6) {
+	ipv4 ??= IPv4RE.test(address);
+	ipv6 ??= IPv6RE.test(address);
 	console.assert(ipv4 || ipv6, "Error: Unknown IP address", address);
 
-	const aaddress = v === 6 || ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? encodeXML(outputbase85(IPv6toInt(expand(address).join("")))) : address : address;
-	let text = `<a href="http${HTTPS ? "s" : ""}://${v === 6 || ipv6 ? `[${address}]` : address}" target="_blank" class="${v === 6 || ipv6 ? "ipv6" : "ipv4"}">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
+	const aaddress = ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? encodeXML(outputbase85(IPv6toInt(expand(address).join("")))) : address : address;
+	let text = `<a href="http${HTTPS ? "s" : ""}://${ipv6 ? `[${address}]` : address}" target="_blank" class="${ipv6 ? "ipv6" : "ipv4"}">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
 	if (LOOKUP) {
 		text += `&nbsp;${lookup(hostname, address)}`;
 	}
@@ -275,11 +276,12 @@ function outputaddress(address, hostname, current, v) {
  * @param {string[]} addresses
  * @param {string} hostname
  * @param {string} current
- * @param {number} v
+ * @param {boolean} ipv4
+ * @param {boolean} ipv6
  * @returns {string}
  */
-function outputaddresses(addresses, hostname, current, v) {
-	return formatter2.format(addresses.map((x) => outputaddress(x, hostname, current, v)));
+function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
+	return formatter2.format(addresses.map((x) => outputaddress(x, hostname, current, ipv4, ipv6)));
 	// .join(', ')
 }
 
@@ -348,7 +350,7 @@ function status(statusCode) {
  * Get emoji and URL classification.
  *
  * @param {Object} details
- * @returns {Object}
+ * @returns {{emojis: string[], classifications: string[]}}
  */
 function getClassification(details) {
 	const emojis = [];
@@ -381,7 +383,9 @@ function getClassification(details) {
  * Get emoji and security state.
  *
  * @param {Object} tab
- * @returns {Object.<string, string>}
+ * @param {Object} tab.securityInfo
+ * @param {string} tab.error
+ * @returns {{emoji: string, state: string}}
  */
 function getstate({ securityInfo, error }) {
 	let emoji = "";
@@ -408,7 +412,7 @@ function getstate({ securityInfo, error }) {
 /**
  * Count instances of values in array.
  *
- * @param {*[]} array
+ * @param {string[]} array
  * @returns {Object.<string, number>}
  */
 function count(array) {
@@ -508,7 +512,7 @@ function checkblacklists(hostname, ipv4s, ipv6s) {
  * Get the geolocation.
  *
  * @param {string[]} addresses
- * @returns {Promise<Object[]>}
+ * @returns {Promise<Array<{start: number|bigint, end: number|bigint, country: string, state2?: string, state1?: string, city?: string, lat?: number, lon?: number}|null>>}
  */
 function getGeoIP(addresses) {
 	return browser.runtime.sendMessage({ type: LOCATION, addresses }).then((message, sender) => {
@@ -551,7 +555,7 @@ function copy(uri) {
 /**
  * Attempt to open link in a new tab.
  *
- * @param {Object} event
+ * @param {MouseEvent} event
  * @returns {void}
  */
 function click(event) {
@@ -751,6 +755,10 @@ function updateTable(requests) {
  *
  * @param {number} tabId
  * @param {Object} tab
+ * @param {Object} tab.details
+ * @param {Object} tab.securityInfo
+ * @param {Map} tab.requests
+ * @param {string} tab.error
  * @returns {void}
  */
 function updatePopup(tabId, tab) {
@@ -785,11 +793,13 @@ function updatePopup(tabId, tab) {
 
 		if (details.statusLine && (!details.ip || url.hostname !== details.ip) && !ipv4 && !ipv6) {
 			if (details.ip) {
-				if (IPv4RE.test(details.ip)) {
-					document.getElementById("ipv4").innerHTML = outputaddress(details.ip, url.hostname, null, 4);
+				const ipv4 = IPv4RE.test(details.ip);
+				const ipv6 = IPv6RE.test(details.ip);
+				if (ipv4) {
+					document.getElementById("ipv4").innerHTML = outputaddress(details.ip, url.hostname, null, ipv4, ipv6);
 					document.querySelector(".ipv4").classList.remove("hidden");
-				} else if (IPv6RE.test(details.ip)) {
-					document.getElementById("ipv6").innerHTML = outputaddress(details.ip, url.hostname, null, 6);
+				} else if (ipv6) {
+					document.getElementById("ipv6").innerHTML = outputaddress(details.ip, url.hostname, null, ipv4, ipv6);
 					document.querySelector(".ipv6").classList.remove("hidden");
 				}
 			} else if (details.fromCache) {
@@ -813,11 +823,11 @@ function updatePopup(tabId, tab) {
 					const ipv6s = record.addresses.filter((value) => IPv6RE.test(value));
 
 					if (ipv4s.length) {
-						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, 4);
+						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, true, false);
 						document.querySelector(".ipv4").classList.remove("hidden");
 					}
 					if (ipv6s.length) {
-						document.getElementById("ipv6").innerHTML = outputaddresses(ipv6s, url.hostname, details.ip, 6);
+						document.getElementById("ipv6").innerHTML = outputaddresses(ipv6s, url.hostname, details.ip, false, true);
 						document.querySelector(".ipv6").classList.remove("hidden");
 					}
 					document.querySelector(".cache").classList.add("hidden");
@@ -1002,7 +1012,7 @@ function getstatus(tabId) {
 
 					updatePopup(tabId, message.tab);
 				} else {
-					data.innerText = `${emojis[1]} Unavailable or Access denied for this page.\nNote that this add-on only works on HTTP/HTTPS pages.`;
+					data.innerText = `${emojis[1]} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS web pages.`;
 					console.debug("Unavailable or Access denied", message);
 				}
 			} else {

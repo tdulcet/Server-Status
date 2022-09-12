@@ -130,7 +130,7 @@ function outputseconds(sec_num) {
 /**
  * Output date.
  *
- * @param {number} date
+ * @param {number|string} date
  * @returns {string}
  */
 function outputdate(date) {
@@ -140,8 +140,8 @@ function outputdate(date) {
 /**
  * Output date range.
  *
- * @param {Date} date1
- * @param {Date} date2
+ * @param {number} date1
+ * @param {number} date2
  * @returns {string}
  */
 function outputdateRange(date1, date2) {
@@ -151,7 +151,7 @@ function outputdateRange(date1, date2) {
 /**
  * Output location.
  *
- * @param {Object} info
+ * @param {{country: string, state2?: string, state1?: string, city?: string}} info
  * @returns {string}
  */
 function outputlocation(info) {
@@ -180,7 +180,7 @@ function earth(longitude) {
  * Get certificate issuer.
  *
  * @param {string} issuer
- * @returns {Object}
+ * @returns {Object.<string, string|void>}
  */
 function getissuer(issuer) {
 	// console.log(issuer);
@@ -196,7 +196,7 @@ function getissuer(issuer) {
  * Get HSTS header directives.
  *
  * @param {string} header
- * @returns {Object}
+ * @returns {Object.<string, string|void>}
  */
 function getHSTS(header) {
 	// console.log(header);
