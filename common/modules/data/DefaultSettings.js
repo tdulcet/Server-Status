@@ -20,7 +20,7 @@ const defaultSettings = {
 		fullipv6: false,
 		compactipv6: false,
 		blocked: true,
-		GeoDB: "8",
+		GeoDB: "7",
 		update: "1",
 		updateidle: true,
 		idle: 60, // Seconds
