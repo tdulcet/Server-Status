@@ -30,7 +30,7 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 	* IP address(es)
 	* Flag for country of server location(s)
 
-Hover over almost everything in the popup, especially in the Requests table, to see tooltips with much more information. Toolbar icon can show:
+Users can hover over almost everything in the popup, especially in the Requests table, to see tooltips with much more information. Toolbar icon can show:
 
 * Flag for country of server location (default)
 	* Badge: Country code
@@ -40,7 +40,7 @@ Hover over almost everything in the popup, especially in the Requests table, to 
 * HTTP status code
 * HTTP version
 
-Hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol and HSTS status.
+Users can hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol and HSTS status.
 
 To monitor the status of one or more servers, please see the [Remote Servers Status Monitoring](https://github.com/tdulcet/Remote-Servers-Status) script.
 
@@ -72,6 +72,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 * Respects your privacy and does not send data anywhere, all information is determined locally in your browser
 * Supports the light/dark mode of your system automatically
 * Settings automatically synced between all browser instances and devices
+* Uses Unicode [Emojis](https://unicode.org/emoji/charts/full-emoji-list.html) for all icons
 * Follows the [Firefox Photon Design](https://design.firefox.com/photon)
 * Compatible with Firefox for Android
 
@@ -84,10 +85,10 @@ Meaning of the emojis used for the toolbar icon and/or in the popup.
 Emoji | Description
 --- | ---
 🏳️ | Flag for the country of the server location
-🌐 | The browser cached the page, so no actual connection made (try refreshing it)
+🌐 | The browser cached the page, so no actual connection was made (try refreshing it)
 ❓ | Location unknown (try selecting a different IP geolocation database)
 ℹ️ | The page failed to load, was blocked or access was denied (Firefox blocks access to some [Mozilla domains](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts))
-🧩 | Unavailable for the page (it only works on HTTP/HTTPS pages and you would need to refresh any existing pages after installing the add-on)
+🧩 | Unavailable for the page (it only works on standard HTTP/HTTPS webpages and you would need to refresh any existing pages after installing the add-on)
 
 ### Security/Connection state
 
@@ -111,7 +112,7 @@ Emoji | HTTP status codes | Description
 🟨 | `300` - `399` | Redirection
 🟥 | `400` - `599` | Client/Server error
 
-There is an [Easter egg](https://en.wikipedia.org/wiki/Easter_egg_(media)) fifth emoji that is not listed. See [here](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for a full list of the possible HTTP status codes.
+There is also an [Easter egg](https://en.wikipedia.org/wiki/Easter_egg_(media)) fifth emoji. See [here](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for a full list of the possible HTTP status codes.
 
 ### ETP Classification
 

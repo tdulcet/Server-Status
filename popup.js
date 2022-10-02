@@ -1012,7 +1012,7 @@ function getstatus(tabId) {
 
 					updatePopup(tabId, message.tab);
 				} else {
-					data.innerText = `${emojis[1]} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS web pages.`;
+					data.innerText = `${emojis[1]} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS webpages.`;
 					console.debug("Unavailable or Access denied", message);
 				}
 			} else {
