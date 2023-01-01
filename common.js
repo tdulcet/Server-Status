@@ -10,13 +10,17 @@ const WORKER = "worker";
 
 const emojis = Object.freeze(["🧩", "ℹ️", "❓", "🌐", "✔️", "✖️", "⏳", "⬇️"]);
 const certificateEmojis = Object.freeze(["🔓", "🔒", "⚠️", "❌", "⛔", "🛡️"]);
-const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", "🫖"]);
-const digitEmojis = Object.freeze([...Array(10)].map((x, i) => `${i}️⃣`));
+const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", /* "🔵", "🟢", "🟡", "🔴", */ "🫖"]);
+// const digitEmojis = Object.freeze([...[...new Array(10)].map((x, i) => `${i}️`), ..."⓿❶❷❸❹❺❻❼❽❾", ..."⓪①②③④⑤⑥⑦⑧⑨"]);
+const digitEmojis = Object.freeze([...new Array(10)].map((x, i) => `${i}️⃣`));
 
+// Ascii85:  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstu
+// Z85:      0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-:+=^!/*?&<>()[]{}@%$#
+// RFC 1924: 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~
 const base85 = Object.freeze(Array.from("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"));
 
 const dateTimeFormat1 = new Intl.DateTimeFormat([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
-const dateTimeFormat2 = new Intl.DateTimeFormat([], { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+// const dateTimeFormat2 = new Intl.DateTimeFormat([], { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
 const dateTimeFormat3 = new Intl.DateTimeFormat([], { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
 const dateTimeFormat4 = new Intl.DateTimeFormat([], { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
 
@@ -33,12 +37,12 @@ const regionNames = new Intl.DisplayNames([], { type: "region" });
 
 // IPv4 address regular expression
 const IPv4 = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])`;
-const IPv4RE = RegExp(`^${IPv4}$`, "u");
+const IPv4RE = new RegExp(`^${IPv4}$`, "u");
 
 // IPv6 address regular expression
 // \p{ASCII_Hex_Digit}
 const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
-const IPv6RE = RegExp(`^${IPv6}$`, "u");
+const IPv6RE = new RegExp(`^${IPv6}$`, "u");
 
 /**
  * Output IP address in base 85
@@ -70,7 +74,7 @@ function expand(address) {
 	const blocks = address.split(":");
 	for (const [i, block] of blocks.entries()) {
 		if (block.length === 0) {
-			blocks.splice(i, 1, ...Array(9 - blocks.length).fill("0000"));
+			blocks.splice(i, 1, ...new Array(9 - blocks.length).fill("0000"));
 		} else {
 			blocks[i] = block.padStart(4, "0");
 		}
@@ -85,7 +89,7 @@ function expand(address) {
  * @returns {number}
  */
 function IPv4toInt(address) {
-	const octets = address.split(".").map((x) => parseInt(x, 10));
+	const octets = address.split(".").map((x) => Number.parseInt(x, 10));
 	return (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3] >>> 0;
 }
 
@@ -112,18 +116,19 @@ function outputseconds(sec_num) {
 	const m = Math.floor(sec_num % 86400 % 3600 / 60);
 	const s = sec_num % 86400 % 3600 % 60;
 	const text = [];
-	if (d > 0) {
+	if (d) {
 		text.push(numberFormat1.format(d));
 	}
-	if (h > 0) {
+	if (h) {
 		text.push(numberFormat2.format(h));
 	}
-	if (m > 0) {
+	if (m) {
 		text.push(numberFormat3.format(m));
 	}
-	if (s > 0) {
+	if (s || !text.length) {
 		text.push(numberFormat4.format(s));
 	}
+
 	return formatter1.format(text);
 }
 

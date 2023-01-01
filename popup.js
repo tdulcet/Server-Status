@@ -6,7 +6,7 @@ const suffix_power_char = Object.freeze(["", "K", "M", "G", "T", "P", "E", "Z", 
 
 const formatter2 = new Intl.ListFormat([], { style: "short" });
 
-const aIPv6RE = RegExp(String.raw`^\[${IPv6}\]$`, "u");
+const aIPv6RE = new RegExp(String.raw`^\[${IPv6}\]$`, "u");
 
 let WARNDAYS = 3;
 let BLOCKED = true;
@@ -95,21 +95,18 @@ function outputunit(number, scale) {
 	anumber += anumber < 10 ? 0.0005 : anumber < 100 ? 0.005 : anumber < 1000 ? 0.05 : 0.5;
 
 	if (number !== 0 && anumber < 1000 && power > 0) {
-		str = number.toString();
+		str = numberFormat.format(number);
 
 		const length = 5 + (number < 0 ? 1 : 0);
 		if (str.length > length) {
 			const prec = anumber < 10 ? 3 : anumber < 100 ? 2 : 1;
-			str = number.toFixed(prec);
+			str = number.toLocaleString([], { maximumFractionDigits: prec });
 		}
 	} else {
-		str = number.toFixed(0);
+		str = number.toLocaleString([], { maximumFractionDigits: 0 });
 	}
 
-	// str = str.toLocaleString();
-	str = numberFormat.format(str);
-
-	str += `\xa0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
+	str += `\u00A0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
 
 	if (!scale && power > 0) {
 		str += "i";
@@ -215,16 +212,23 @@ function outputtime(time) {
  */
 function map(latitude, longitude) {
 	let url = "";
-	if (MAP === 1) {
-		url = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}`;
-	} else if (MAP === 2) {
-		url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-	} else if (MAP === 3) {
-		url = `https://bing.com/maps/?cp=${latitude}~${longitude}`;
-	} else if (MAP === 4) {
-		url = `https://www.mapquest.com/latlng/${latitude},${longitude}`;
-	} else if (MAP === 5) {
-		url = `https://maps.apple.com/?q=${latitude},${longitude}`;
+	switch (MAP) {
+		case 1:
+			url = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}`;
+			break;
+		case 2:
+			url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+			break;
+		case 3:
+			url = `https://bing.com/maps/?cp=${latitude}~${longitude}`;
+			break;
+		case 4:
+			url = `https://www.mapquest.com/latlng/${latitude},${longitude}`;
+			break;
+		case 5:
+			url = `https://maps.apple.com/?q=${latitude},${longitude}`;
+			break;
+		// No default
 	}
 	return `(<a href="${url}" target="_blank" class="button" title="Click to View Map">🗺️</a>)`;
 }
@@ -238,11 +242,15 @@ function map(latitude, longitude) {
  */
 function lookup(hostname, address) {
 	let url = "";
-	if (LOOKUP === 1) {
-		// https://iplookup.flagfox.net/?ip={IPaddress}&host={domainName}
-		url = `https://iplookup.flagfox.net/?ip=${address}&host=${hostname}`;
-	} else if (LOOKUP === 2) {
-		url = `https://www.ip2location.com/${address}`;
+	switch (LOOKUP) {
+		case 1:
+			// https://iplookup.flagfox.net/?ip={IPaddress}&host={domainName}
+			url = `https://iplookup.flagfox.net/?ip=${address}&host=${hostname}`;
+			break;
+		case 2:
+			url = `https://www.ip2location.com/${address}`;
+			break;
+		// No default
 	}
 	return `(<a href="${url}" target="_blank" class="button" title="Click to Lookup IP address">🔍</a>)`;
 }
@@ -451,7 +459,7 @@ function outputtitle(array, str) {
 function checkblacklist(domain, blacklist, address) {
 	browser.dns.resolve(domain).then((record) => {
 		if (record.addresses.length) {
-			document.getElementById("blacklist").innerText = `⚠️🚫\xa0${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
+			document.getElementById("blacklist").innerText = `⚠️🚫\u00A0${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
 			document.querySelector(".blacklist").classList.remove("hidden");
 		}
 	}).catch(() => { });
@@ -613,7 +621,7 @@ function updateTable(requests) {
 				cell.textContent = states.length ? Array.from(new Set(states.map((obj) => obj.emoji))).join("") : certificateEmojis[5];
 
 				if (arequest.length) {
-					const { details, securityInfo } = arequest[arequest.length - 1];
+					const { details, securityInfo } = arequest.at(-1);
 
 					if (securityInfo.state !== "insecure" && securityInfo.certificates.length) {
 						const { details } = arequest[0];
@@ -641,10 +649,9 @@ function updateTable(requests) {
 						cell.style.color = color;
 						cell.textContent = days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
 
-						const versions = arequest.map((obj) => obj.securityInfo.protocolVersion);
 						cell = row.insertCell();
-						cell.title = outputtitle(versions, securityInfo.protocolVersion);
-						cell.textContent = Array.from(new Set(versions.map((str) => str?.startsWith("TLS") ? str.slice("TLS".length) : str))).join("\n");
+						cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}${obj.secretKeyLength ? `, ${obj.secretKeyLength} bits` : ""}, ${obj.cipherSuite}`));
+						cell.textContent = Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion).map((str) => str?.startsWith("TLS") ? str.slice("TLS".length) : str))).join("\n");
 
 						cell = row.insertCell();
 						if (details.responseHeaders) {
@@ -652,7 +659,7 @@ function updateTable(requests) {
 							// const header = arequest.find((obj) => obj.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security"))?.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
 							if (header) {
 								const aheader = getHSTS(header.value);
-								const sec = parseInt(aheader["max-age"], 10);
+								const sec = Number.parseInt(aheader["max-age"], 10);
 								const days = Math.floor(sec / 86400);
 								cell.title = `HSTS: Yes (${outputseconds(sec)})`;
 								cell.textContent = days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
@@ -680,7 +687,7 @@ function updateTable(requests) {
 					cell = row.insertCell();
 					cell.innerHTML = outputhost(hostname, `http${HTTPS ? "s" : ""}:`);
 
-					const addresses = Array.from(new Set(arequest.map((obj) => obj.details.ip).filter((x) => x)));
+					const addresses = Array.from(new Set(arequest.map((obj) => obj.details.ip).filter(Boolean)));
 					cell = row.insertCell();
 					if (addresses.length) {
 						cell.innerHTML = addresses.map((x) => outputaddress(x, hostname, details.ip)).join("\n");
@@ -777,7 +784,9 @@ function updatePopup(tabId, tab) {
 			document.getElementById("paint").textContent = paint.length ? outputtime(paint[0].startTime) : "None";
 			const size = navigation.transferSize;
 			document.getElementById("size").textContent = `${outputunit(size, false)}B${size >= 1000 ? ` (${outputunit(size, true)}B)` : ""}`;
-			document.querySelectorAll(".content").forEach((element) => element.classList.remove("hidden"));
+			for (const element of document.querySelectorAll(".content")) {
+				element.classList.remove("hidden");
+			}
 			// console.log(message);
 		}
 	}).catch(handleError).finally(() => {
@@ -855,7 +864,7 @@ function updatePopup(tabId, tab) {
 			getGeoIP([details.ip]).then(([info]) => {
 				// console.log(details.ip, info);
 				if (info?.country) {
-					const text = `${outputlocation(info)}\xa0${countryCode(info.country)}${info.lon != null ? `\xa0${earth(info.lon)}` : ""}`;
+					const text = `${outputlocation(info)}\u00A0${countryCode(info.country)}${info.lon != null ? `\u00A0${earth(info.lon)}` : ""}`;
 					if (MAP && info.lat != null && info.lon != null) {
 						location.innerHTML = `${text}&nbsp;&nbsp;${map(info.lat, info.lon)}`;
 					} else {
@@ -883,7 +892,7 @@ function updatePopup(tabId, tab) {
 
 	if (details.statusLine || error) {
 		const { emoji, state } = getstate(tab);
-		document.getElementById("state").textContent = `${emoji}\xa0${state}`;
+		document.getElementById("state").textContent = `${emoji}\u00A0${state}`;
 
 		if (details.statusLine && securityInfo.state !== "insecure" && securityInfo.certificates.length) {
 			const [certificate] = securityInfo.certificates;
@@ -918,8 +927,8 @@ function updatePopup(tabId, tab) {
 			const expiration = document.getElementById("expiration");
 			const date1 = new Date(start);
 			const date2 = new Date(end);
-			expiration.title = dateTimeFormat2.formatRange(date1, date2);
-			expiration.textContent = `${emoji ? `${emoji}\xa0` : ""}${dateTimeFormat4.formatRange(date1, date2)}`;
+			expiration.title = dateTimeFormat1.formatRange(date1, date2);
+			expiration.textContent = `${emoji ? `${emoji}\u00A0` : ""}${dateTimeFormat4.formatRange(date1, date2)}`;
 			if (timeoutID) {
 				clearTimeout(timeoutID);
 				timeoutID = null;
@@ -930,7 +939,7 @@ function updatePopup(tabId, tab) {
 
 			const protocol = document.getElementById("protocol");
 			protocol.title = securityInfo.cipherSuite;
-			protocol.textContent = securityInfo.protocolVersion;
+			protocol.textContent = securityInfo.protocolVersion + (securityInfo.secretKeyLength ? `, ${securityInfo.secretKeyLength} bit keys` : "");
 			const hsts = document.getElementById("hsts");
 			if (details.responseHeaders) {
 				// console.log(details.responseHeaders);
@@ -940,9 +949,9 @@ function updatePopup(tabId, tab) {
 					// console.log(header, aheader);
 					hsts.title = header.value;
 					// "preload" in aheader ? ", preloaded" : ""
-					hsts.textContent = `${emojis[4]}\xa0Yes\xa0\xa0(${outputseconds(parseInt(aheader["max-age"], 10))})`;
+					hsts.textContent = `${emojis[4]}\u00A0Yes\u00A0\u00A0(${outputseconds(Number.parseInt(aheader["max-age"], 10))})`;
 				} else {
-					hsts.textContent = securityInfo.hsts ? `${emojis[4]}\xa0Yes` : `${certificateEmojis[3]}\xa0No`;
+					hsts.textContent = securityInfo.hsts ? `${emojis[4]}\u00A0Yes` : `${certificateEmojis[3]}\u00A0No`;
 				}
 				console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
@@ -963,13 +972,15 @@ function updatePopup(tabId, tab) {
 				} else {
 					hsts.textContent = `${certificateEmojis[3]}\xa0No`;
 				} */
-				hsts.textContent = securityInfo.hsts ? `${emojis[5]}\xa0Yes` : `${certificateEmojis[3]}\xa0No`;
+				hsts.textContent = securityInfo.hsts ? `${emojis[5]}\u00A0Yes` : `${certificateEmojis[3]}\u00A0No`;
 			}
 
-			document.querySelectorAll(".certificate").forEach((element) => element.classList.remove("hidden"));
+			for (const element of document.querySelectorAll(".certificate")) {
+				element.classList.remove("hidden");
+			}
 		}
 	} else {
-		document.getElementById("state").textContent = `${certificateEmojis[5]}\xa0Blocked`;
+		document.getElementById("state").textContent = `${certificateEmojis[5]}\u00A0Blocked`;
 	}
 
 	document.querySelector(".no-data").classList.add("hidden");

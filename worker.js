@@ -66,26 +66,14 @@ function agetGeoIP(url, v, cache) {
 				case 3:
 				case 4:
 				case 5:
-					if (v === 4) {
-						GEOIP = Object.freeze(GEOIP.map(([start, end, country]) => [parseInt(start, 10), parseInt(end, 10), country]));
-					} else {
-						GEOIP = Object.freeze(GEOIP.map(([start, end, country]) => [BigInt(start), BigInt(end), country]));
-					}
+					GEOIP = v === 4 ? Object.freeze(GEOIP.map(([start, end, country]) => [Number.parseInt(start, 10), Number.parseInt(end, 10), country])) : Object.freeze(GEOIP.map(([start, end, country]) => [BigInt(start), BigInt(end), country]));
 					break;
 				case 6:
 				case 7:
-					if (v === 4) {
-						GEOIP = Object.freeze(GEOIP.map(([start, end, country, state1, city, lat, lon]) => [parseInt(start, 10), parseInt(end, 10), country, state1, city, lat ? parseFloat(lat) : null, lon ? parseFloat(lon) : null]));
-					} else {
-						GEOIP = Object.freeze(GEOIP.map(([start, end, country, state1, city, lat, lon]) => [BigInt(start), BigInt(end), country, state1, city, lat ? parseFloat(lat) : null, lon ? parseFloat(lon) : null]));
-					}
+					GEOIP = v === 4 ? Object.freeze(GEOIP.map(([start, end, country, state1, city, lat, lon]) => [Number.parseInt(start, 10), Number.parseInt(end, 10), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null])) : Object.freeze(GEOIP.map(([start, end, country, state1, city, lat, lon]) => [BigInt(start), BigInt(end), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
 					break;
 				case 8:
-					if (v === 4) {
-						GEOIP = Object.freeze(GEOIP.map(([start, end, country, state2, state1, city, lat, lon]) => [parseInt(start, 10), parseInt(end, 10), country, state2, state1, city, lat ? parseFloat(lat) : null, lon ? parseFloat(lon) : null]));
-					} else {
-						GEOIP = Object.freeze(GEOIP.map(([start, end, country, state2, state1, city, lat, lon]) => [BigInt(start), BigInt(end), country, state2, state1, city, lat ? parseFloat(lat) : null, lon ? parseFloat(lon) : null]));
-					}
+					GEOIP = v === 4 ? Object.freeze(GEOIP.map(([start, end, country, state2, state1, city, lat, lon]) => [Number.parseInt(start, 10), Number.parseInt(end, 10), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null])) : Object.freeze(GEOIP.map(([start, end, country, state2, state1, city, lat, lon]) => [BigInt(start), BigInt(end), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
 					break;
 			}
 
@@ -175,11 +163,7 @@ async function getGeoLoc(date, languages, cache) {
 		};
 
 		// The full location databases are too large to store in local storage, which is limited to 255 MiB
-		if (settings.GeoDB >= 1 && settings.GeoDB <= 5) {
-			message.GEOIP = { GeoIPv4, GeoIPv6, GeoDB: settings.GeoDB, date };
-		} else {
-			message.GEOIP = { GeoDB: settings.GeoDB, date };
-		}
+		message.GEOIP = settings.GeoDB >= 1 && settings.GeoDB <= 5 ? { GeoIPv4, GeoIPv6, GeoDB: settings.GeoDB, date } : { GeoDB: settings.GeoDB, date };
 
 		postMessage(message);
 
@@ -289,7 +273,7 @@ function getGeoIP(address) {
 			address = expand(address.toLowerCase()).join("");
 			// IPv4-mapped, IPv4-compatible and IPv4-embedded IPv6 addresses
 			if (address.startsWith("00000000000000000000ffff") || address.startsWith("000000000000000000000000") || address.startsWith("0064ff9b")) {
-				return searchGeoIP(GeoIPv4, parseInt(address.slice(-8), 16));
+				return searchGeoIP(GeoIPv4, Number.parseInt(address.slice(-8), 16));
 			}
 
 			return searchGeoIP(GeoIPv6, IPv6toInt(address));
@@ -329,16 +313,24 @@ addEventListener("message", (event) => {
 	const message = event.data;
 	// console.log(message);
 
-	if (message.type === WORKER) {
-		getGeoLoc(message.date, message.languages);
-	} else if (message.type === LOCATION) {
-		const response = {
-			type: LOCATION,
-			locations: message.addresses.map((x) => getGeoIP(x))
-		};
-		// console.log(response);
-		event.ports[0].postMessage(response);
-	} else if (message.type === BACKGROUND) {
-		setSettings(message);
+	switch (message.type) {
+		case WORKER: {
+			getGeoLoc(message.date, message.languages);
+			break;
+		}
+		case LOCATION: {
+			const response = {
+				type: LOCATION,
+				locations: message.addresses.map((x) => getGeoIP(x))
+			};
+			// console.log(response);
+			event.ports[0].postMessage(response);
+			break;
+		}
+		case BACKGROUND: {
+			setSettings(message);
+			break;
+		}
+		// No default
 	}
 });

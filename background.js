@@ -111,11 +111,36 @@ function getImageData(emoji, size) {
 	const canvas = window.OffscreenCanvas ? new OffscreenCanvas(size, size) : document.createElement("canvas");
 	const ctx = canvas.getContext("2d");
 
-	ctx.font = `${size * (IS_LINUX && !IS_CHROME ? 63 / 64 : IS_ANDROID ? 57 / 64 : 7 / 8)}px serif`;
+	// https://bugzilla.mozilla.org/show_bug.cgi?id=1692791
+	if (IS_LINUX) {
+		ctx.font = `${size * (IS_LINUX && !IS_CHROME ? 63 / 64 : IS_ANDROID ? 57 / 64 : 7 / 8)}px sans-serif`;
+	}
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	// draw the emoji
-	ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : IS_LINUX ? 59 / 96 : 13 / 24));
+
+	if (!IS_LINUX) {
+		let font_size = size / 2;
+		let width = 0;
+		let height = 0;
+		do {
+			++font_size;
+			ctx.font = `${font_size}px sans-serif`; // "Twemoji Mozilla"
+			const textMetrics = ctx.measureText(emoji);
+			width = Math.abs(textMetrics.actualBoundingBoxLeft) + Math.abs(textMetrics.actualBoundingBoxRight);
+			height = Math.abs(textMetrics.actualBoundingBoxAscent) + Math.abs(textMetrics.actualBoundingBoxDescent);
+		} while (width < size && height < size);
+
+		--font_size;
+		ctx.font = `${font_size}px sans-serif`; // "Twemoji Mozilla"
+		const textMetrics = ctx.measureText(emoji);
+		width = Math.abs(textMetrics.actualBoundingBoxLeft) - Math.abs(textMetrics.actualBoundingBoxRight);
+		height = Math.abs(textMetrics.actualBoundingBoxAscent) - Math.abs(textMetrics.actualBoundingBoxDescent);
+		// draw the emoji
+		ctx.fillText(emoji, (size + width) / 2, (size + height) / 2);
+	} else {
+		// draw the emoji
+		ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : IS_LINUX ? 59 / 96 : 13 / 24));
+	}
 
 	return ctx.getImageData(0, 0, size, size);
 }
@@ -268,7 +293,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			// Certificate issuer
 			title.push(`𝗜𝘀𝘀𝘂𝗲𝗿:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} (${aissuer.C}) ${countryCode(aissuer.C)}` : ""}`);
 			// SSL/TLS protocol
-			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}`);
+			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}${securityInfo.secretKeyLength ? `, ${securityInfo.secretKeyLength} bit keys` : ""}`);
 
 			if (settings.icon === 2) {
 				if (sec > 0) {
@@ -287,7 +312,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			} else if (settings.icon === 3) {
 				const version = securityInfo.protocolVersion;
 				if (version.startsWith("TLSv")) {
-					const [major, minor] = version.slice("TLSv".length).split(".").map((x) => parseInt(x, 10));
+					const [major, minor] = version.slice("TLSv".length).split(".").map((x) => Number.parseInt(x, 10));
 					if (major === 1) {
 						icon = minor < digitIcons.length ? digitIcons[minor] : icons[2];
 						if (minor === 0 || minor === 1) {
@@ -301,7 +326,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 						icon = icons[2];
 						backgroundColor = settings.color;
 					}
-					text = version.slice("TLS".length);
+					text = version.slice("TLSv".length);
 				} else {
 					icon = icons[2];
 					text = version;
@@ -322,7 +347,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			if (header) {
 				const aheader = getHSTS(header.value);
 				// console.log(header, aheader);
-				atitle += `✔ Yes (${outputseconds(parseInt(aheader["max-age"], 10))})`;
+				atitle += `✔ Yes (${outputseconds(Number.parseInt(aheader["max-age"], 10))})`;
 			} else {
 				atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
 			}
@@ -373,20 +398,21 @@ async function updateIcon(tabId, { details, securityInfo }) {
 		console.assert(regexResult, "Error: Unknown HTTP Status", details.statusLine);
 		if (regexResult) {
 			const version = regexResult[1];
-			const [major, minor] = version.split(".").map((x) => parseInt(x, 10));
+			const [major, minor] = version.split(".").map((x) => Number.parseInt(x, 10));
 			icon = major < digitIcons.length ? digitIcons[major] : icons[2];
-			if (major === 0) {
-				backgroundColor = "red";
-			} else if (major === 1) {
-				if (minor === 0) {
+			switch (major) {
+				case 0:
 					backgroundColor = "red";
-				} else {
-					backgroundColor = "blue";
+					break;
+				case 1:
+					backgroundColor = minor === 0 ? "red" : "blue";
+					break;
+				case 2:
+					backgroundColor = "teal";
+					break;
+				default: if (major >= 3) {
+					backgroundColor = "green";
 				}
-			} else if (major === 2) {
-				backgroundColor = "teal";
-			} else if (major >= 3) {
-				backgroundColor = "green";
 			}
 			text = version;
 		} else {
@@ -420,6 +446,7 @@ async function updateActiveTab(details) {
 						// console.log(`Success: ${details.tabId}`, changeInfo.url);
 					} else {
 						const tabInfo = await browser.tabs.get(details.tabId);
+						// https://bugzilla.mozilla.org/show_bug.cgi?id=1455060
 						if (tabInfo.isInReaderMode) {
 							updateIcon(details.tabId, tab);
 						} else {
@@ -675,115 +702,70 @@ function getPSL(date) {
 }
 
 /**
- * Find common prefix.
+ * Traverse Trie tree of objects to create RegEx.
  *
- * @param {string[]} strs
+ * @param {Object.<string, Object|boolean>} tree
  * @returns {string}
  */
-function prefix(strs) {
-	let prefix = "";
+function createRegEx(tree) {
+	const alternatives = [];
+	const characterClass = [];
 
-	for (const char of strs[0]) {
-		const aprefix = prefix + char;
-		for (const str of strs) {
-			if (!str.startsWith(aprefix)) {
-				return prefix;
+	for (const char in tree) {
+		if (char) {
+			if (!("" in tree[char] && Object.keys(tree[char]).length === 1)) {
+				const recurse = createRegEx(tree[char]);
+				alternatives.push(recurse + char);
+			} else {
+				characterClass.push(char);
 			}
 		}
-		prefix = aprefix;
 	}
 
-	return prefix;
+	if (characterClass.length) {
+		alternatives.push(characterClass.length === 1 ? characterClass[0] : `[${characterClass.join("")}]`);
+	}
+
+	let result = alternatives.length === 1 ? alternatives[0] : `(?:${alternatives.join("|")})`;
+
+	if ("" in tree) {
+		if (characterClass.length || alternatives.length > 1) {
+			result += "?";
+		} else {
+			result = `(?:${result})?`;
+		}
+	}
+
+	return result;
 }
 
 /**
- * Find common suffix.
- *
- * @param {string[]} strs
- * @returns {string}
- */
-function suffix(strs) {
-	let suffix = "";
-
-	for (const char of Array.from(strs[0]).reverse()) {
-		const asuffix = char + suffix;
-		for (const str of strs) {
-			if (!str.endsWith(asuffix)) {
-				return suffix;
-			}
-		}
-		suffix = asuffix;
-	}
-
-	return suffix;
-}
-
-/**
- * Traverse tree of objects to create RegEx.
- *
- * @param {Object.<string, Object|boolean>} obj
- * @returns {string}
- */
-function traverse(obj) {
-	const array = [];
-
-	for (const s in obj) {
-		if (s !== "leaf") {
-			const length = Object.keys(obj[s]).length;
-			let temp = "";
-
-			if (length > 1 || length === 1 && !obj[s].leaf) {
-				if (obj[s].leaf) {
-					temp += String.raw`(?:${traverse(obj[s])}\.)?`;
-				} else {
-					temp += String.raw`${traverse(obj[s])}\.`;
-				}
-			}
-
-			temp += s.replace("---", "[^.]+");
-			array.push(temp);
-		}
-	}
-
-	if (array.length > 1) {
-		const aprefix = prefix(array);
-		const asuffix = suffix(array);
-
-		if (aprefix.length > 1 || asuffix.length > 1) {
-			return `${aprefix}(?:${array.map((x) => x.slice(aprefix.length, asuffix ? -asuffix.length : x.length)).join("|")})${asuffix}`;
-		}
-
-		return `(?:${array.join("|")})`;
-	}
-
-	return array.join("|");
-}
-
-/**
- * Convert public suffix list into tree of objects.
+ * Convert public suffix list into Trie tree of objects.
  *
  * @param {string[]} arr
  * @returns {string}
  */
-function createRegEx(arr) {
+function createTree(arr) {
 	const tree = {};
 
-	for (const s of arr) {
+	arr.sort((a, b) => b.length - a.length)
+
+	for (const str of arr) {
 		let temp = tree;
 
-		for (const l of punycode(s.replaceAll("*", "---")).split(".").reverse()) {
-			if (!(l in temp)) {
-				temp[l] = {};
+		for (const char of Array.from(punycode(str.replaceAll("*", "---")).replaceAll("---", "*")).reverse()) {
+			if (!(char in temp)) {
+				temp[char] = {};
 			}
-			temp = temp[l];
+			temp = temp[char];
 		}
 
 		// Leaf node
-		temp.leaf = true;
+		temp[""] = true;
 	}
 
 	Object.freeze(tree);
-	return traverse(tree);
+	return createRegEx(tree).replaceAll(".", "\\.").replaceAll("*", "[^.]+");
 }
 
 /**
@@ -806,8 +788,8 @@ function parsePSL(PSL) {
 
 	// console.log(suffixes, exceptions);
 
-	suffixes = createRegEx(suffixes);
-	exceptions = createRegEx(exceptions);
+	suffixes = createTree(suffixes);
+	exceptions = createTree(exceptions);
 
 	console.log(suffixes, exceptions);
 
@@ -957,13 +939,13 @@ function setSettings(asettings) {
 	settings.compactipv6 = asettings.compactipv6;
 	settings.blocked = asettings.blocked;
 	settings.https = asettings.https;
-	const GeoDB = parseInt(asettings.GeoDB, 10);
-	settings.update = parseInt(asettings.update, 10);
+	const GeoDB = Number.parseInt(asettings.GeoDB, 10);
+	settings.update = Number.parseInt(asettings.update, 10);
 	settings.updateidle = asettings.updateidle;
 	settings.idle = asettings.idle;
-	settings.map = parseInt(asettings.map, 10);
-	settings.lookup = parseInt(asettings.lookup, 10);
-	settings.icon = parseInt(asettings.icon, 10);
+	settings.map = Number.parseInt(asettings.map, 10);
+	settings.lookup = Number.parseInt(asettings.lookup, 10);
+	settings.icon = Number.parseInt(asettings.icon, 10);
 	settings.dns = asettings.dns;
 	settings.blacklist = asettings.blacklist;
 	settings.domainblacklists = [asettings.domainblacklist];
@@ -1022,20 +1004,28 @@ function setSettings(asettings) {
 					const message = event.data;
 					// console.log(message);
 
-					if (message.type === NOTIFICATION) {
-						notification(message.title, message.message, message.date);
-					} else if (message.type === WORKER) {
-						setIcon(null, icons[0], null, null, null);
-
-						for (const [tabId, tab] of tabs) {
-							if (tab.details && tab.details.statusLine) {
-								updateIcon(tabId, tab);
-							}
+					switch (message.type) {
+						case NOTIFICATION: {
+							notification(message.title, message.message, message.date);
+							break;
 						}
-					} else if (message.type === BACKGROUND) {
-						setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
+						case WORKER: {
+							setIcon(null, icons[0], null, null, null);
 
-						browser.storage.local.set({ GEOIP: message.GEOIP });
+							for (const [tabId, tab] of tabs) {
+								if (tab.details && tab.details.statusLine) {
+									updateIcon(tabId, tab);
+								}
+							}
+							break;
+						}
+						case BACKGROUND: {
+							setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
+
+							browser.storage.local.set({ GEOIP: message.GEOIP });
+							break;
+						}
+						// No default
 					}
 				});
 			}
@@ -1116,51 +1106,57 @@ init();
 
 browser.runtime.onMessage.addListener((message, sender) => {
 	// console.log(message);
-	if (message.type === POPUP) {
-		popup = message.tabId;
-		const tab = tabs.get(message.tabId);
-		const response = {
-			type: POPUP,
-			WARNDAYS: settings.warndays,
-			FULLIPv6: settings.fullipv6,
-			COMPACTIPv6: settings.compactipv6,
-			BLOCKED: settings.blocked,
-			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,
-			DNS: settings.dns,
-			BLACKLIST: settings.blacklist,
-			DOMAINBLACKLISTS: settings.domainblacklists,
-			IPv4BLACKLISTS: settings.ipv4blacklists,
-			IPv6BLACKLISTS: settings.ipv6blacklists,
-			SUFFIX: settings.suffix,
-			suffixes,
-			exceptions,
-			GeoDB: settings.GeoDB,
-			MAP: settings.map,
-			LOOKUP: settings.lookup,
-			SEND: settings.send,
-			tab
-		};
-		// console.log(response);
-		return Promise.resolve(response);
-	} else if (message.type === LOCATION) {
-		return new Promise((resolve) => {
-			const channel = new MessageChannel();
-
-			channel.port1.onmessage = (event) => {
-				channel.port1.close();
-				resolve(event.data);
+	switch (message.type) {
+		case POPUP: {
+			popup = message.tabId;
+			const tab = tabs.get(message.tabId);
+			const response = {
+				type: POPUP,
+				WARNDAYS: settings.warndays,
+				FULLIPv6: settings.fullipv6,
+				COMPACTIPv6: settings.compactipv6,
+				BLOCKED: settings.blocked,
+				HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,
+				DNS: settings.dns,
+				BLACKLIST: settings.blacklist,
+				DOMAINBLACKLISTS: settings.domainblacklists,
+				IPv4BLACKLISTS: settings.ipv4blacklists,
+				IPv6BLACKLISTS: settings.ipv6blacklists,
+				SUFFIX: settings.suffix,
+				suffixes,
+				exceptions,
+				GeoDB: settings.GeoDB,
+				MAP: settings.map,
+				LOOKUP: settings.lookup,
+				SEND: settings.send,
+				tab
 			};
-
-			worker.postMessage(message, [channel.port2]);
-		});
-	} else if (message.type === BACKGROUND) {
-		setSettings(message.optionValue);
-
-		for (const [tabId, tab] of tabs) {
-			if (tab.details && tab.details.statusLine) {
-				updateIcon(tabId, tab);
-			}
+			// console.log(response);
+			return Promise.resolve(response);
 		}
+		case LOCATION: {
+			return new Promise((resolve) => {
+				const channel = new MessageChannel();
+
+				channel.port1.onmessage = (event) => {
+					channel.port1.close();
+					resolve(event.data);
+				};
+
+				worker.postMessage(message, [channel.port2]);
+			});
+		}
+		case BACKGROUND: {
+			setSettings(message.optionValue);
+
+			for (const [tabId, tab] of tabs) {
+				if (tab.details && tab.details.statusLine) {
+					updateIcon(tabId, tab);
+				}
+			}
+			break;
+		}
+		// No default
 	}
 });
 

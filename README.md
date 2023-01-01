@@ -146,6 +146,7 @@ Pull requests welcome! Ideas for contributions:
 * Add more information to the popup
 	* Add key length (see [bug 1778473](https://bugzilla.mozilla.org/show_bug.cgi?id=1778473))
 * Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML) from the popup
+* Use the [TextMetrics](https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics) interface to dynamically determine the font size for each emoji when generating the icons (see [bug 1692791](https://bugzilla.mozilla.org/show_bug.cgi?id=1692791#c8))
 * Show the IP address and location for cached requests (see [bug 1395020](https://bugzilla.mozilla.org/show_bug.cgi?id=1395020))
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))
 * Use the `hsts` property in the `SecurityInfo` object to determine if the request used HSTS
@@ -158,7 +159,7 @@ Pull requests welcome! Ideas for contributions:
 * Add support for more IP geolocation databases (see [here](https://gitlab.com/tdulcet/ip-geolocation-dbs#contributing))
 * Improve the performance
 * Show the server location on a globe
-* Show a list of the number of requests for each country for all pages (suggested by Daniel Connelly)
+* Show a list of the number of connections for each country for all pages (see [bug 1796768](https://bugzilla.mozilla.org/show_bug.cgi?id=1796768), suggested by Daniel Connelly)
 * Show requests that occurred outside a tab
 * Allow installing in Firefox for Android from AMO (see [here](https://github.com/mozilla-mobile/fenix/issues/20736)) and sync settings (see [bug 1625257](https://bugzilla.mozilla.org/show_bug.cgi?id=1625257))
 * Add support for Chromium

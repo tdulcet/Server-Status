@@ -11,3 +11,7 @@ ul.list li {
 	margin: unset;
 	padding: unset;
 }
+
+.large {
+	font-size: 1.25em;
+}
