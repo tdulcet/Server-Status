@@ -84,7 +84,7 @@ Meaning of the emojis used for the toolbar icon and/or in the popup.
 
 Emoji | Description
 --- | ---
-🏳️ | Flag for the country of the server location
+🏳️ | Flag for the country of the server location (supports all Unicode country flag emojis, currently 258)
 🌐 | The browser cached the page, so no actual connection was made (try refreshing it)
 ❓ | Location unknown (try selecting a different IP geolocation database)
 ℹ️ | The page failed to load, was blocked or access was denied (Firefox blocks access to some [Mozilla domains](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts))
@@ -144,13 +144,10 @@ Pull requests welcome! Ideas for contributions:
 * Refactor into more modules
 * Improve the popup design
 * Add more information to the popup
-	* Add key length (see [bug 1778473](https://bugzilla.mozilla.org/show_bug.cgi?id=1778473))
 * Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML) from the popup
 * Use the [TextMetrics](https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics) interface to dynamically determine the font size for each emoji when generating the icons (see [bug 1692791](https://bugzilla.mozilla.org/show_bug.cgi?id=1692791#c8))
 * Show the IP address and location for cached requests (see [bug 1395020](https://bugzilla.mozilla.org/show_bug.cgi?id=1395020))
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))
-* Use the `hsts` property in the `SecurityInfo` object to determine if the request used HSTS
-	* Currently it has to manually check the headers due to [bug 1778454](https://bugzilla.mozilla.org/show_bug.cgi?id=1778454)
 * Show requests intercepted by service workers (see [bug 1626831](https://bugzilla.mozilla.org/show_bug.cgi?id=1626831))
 * Open the `about:certificate` page directly instead of requiring the user to manually paste the URI (see [bug 1777950](https://bugzilla.mozilla.org/show_bug.cgi?id=1777950))
 * Show the certificate information in the popup after the user adds an exception (see [bug 1678492](https://bugzilla.mozilla.org/show_bug.cgi?id=1678492))
@@ -161,7 +158,7 @@ Pull requests welcome! Ideas for contributions:
 * Show the server location on a globe
 * Show a list of the number of connections for each country for all pages (see [bug 1796768](https://bugzilla.mozilla.org/show_bug.cgi?id=1796768), suggested by Daniel Connelly)
 * Show requests that occurred outside a tab
-* Allow installing in Firefox for Android from AMO (see [here](https://github.com/mozilla-mobile/fenix/issues/20736)) and sync settings (see [bug 1625257](https://bugzilla.mozilla.org/show_bug.cgi?id=1625257))
+* Allow installing in Firefox for Android from AMO (see [here](https://github.com/mozilla-mobile/fenix/issues/20736) and [bug 1796184](https://bugzilla.mozilla.org/show_bug.cgi?id=1796184)) and sync settings (see [bug 1625257](https://bugzilla.mozilla.org/show_bug.cgi?id=1625257))
 * Add support for Chromium
 	* `webRequest.getSecurityInfo()` is not yet supported (see [bug 628819](https://bugs.chromium.org/p/chromium/issues/detail?id=628819))
 * Localize the add-on

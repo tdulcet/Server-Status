@@ -72,7 +72,8 @@
 							<label for="icon1"><strong>Server location</strong></label>
 							<ul class="list">
 								<li>Icon: Flag for country of server location (e.g. <span class="large">🇺🇸</span> or
-									<span class="large">🇬🇧</span>)</li>
+									<span class="large">🇬🇧</span>)
+								</li>
 								<li>Badge: Country code (e.g. <code>US</code> or <code>GB</code>)</li>
 							</ul>
 						</div>
@@ -85,7 +86,8 @@
 							<ul class="list">
 								<li>Icon and badge: Internet Protocol version<br>(i.e. <span class="large">4️⃣</span>
 									and <code>v4</code> respectively for IPv4 or <span class="large">6️⃣</span> and
-									<code>v6</code> for IPv6)</li>
+									<code>v6</code> for IPv6)
+								</li>
 							</ul>
 						</div>
 
@@ -123,7 +125,8 @@
 							<ul class="list">
 								<li>Icon and badge: <abbr title="Hypertext Transfer Protocol">HTTP</abbr> status
 									code<br>(e.g. <span class="large">🟩</span> and <code>200</code> respectively or
-									<span class="large">🟥</span> and <code>404</code>)</li>
+									<span class="large">🟥</span> and <code>404</code>)
+								</li>
 							</ul>
 						</div>
 
@@ -135,8 +138,21 @@
 							<ul class="list">
 								<li>Icon: <abbr title="Hypertext Transfer Protocol">HTTP</abbr> major version (e.g.
 									<span class="large">1️⃣</span> for HTTP 1.1 or <span class="large">3️⃣</span> for
-									HTTP 3)</li>
+									HTTP 3)
+								</li>
 								<li>Badge: Full version (e.g. <code>1.1</code> or <code>3</code>)</li>
+							</ul>
+						</div>
+
+						<hr>
+
+						<div class="line">
+							<input id="icon7" type="radio" name="icon" value="7">
+							<label for="icon7"><strong>Load time</strong></label>
+							<ul class="list">
+								<li>Icon and badge: Load time in milliseconds<br>(e.g. <span class="large">🟩</span> and
+									<code>2500</code> respectively or <span class="large">🟨</span> and <code>4000</code>)
+								</li>
 							</ul>
 						</div>
 					</fieldset>
@@ -195,6 +211,18 @@
 								<ul class="list">
 									<li>Updated Daily</li>
 								</ul>
+							</div>
+
+							<hr>
+
+							<div class="line">
+								<input id="GeoDB9" type="radio" name="GeoDB" value="9">
+								<label for="GeoDB9"><strong>IPinfo.io</strong></label>
+								<ul class="list">
+									<li>Updated Daily</li>
+								</ul>
+								<span class="line indent helper-text">IP address data powered by <a
+										href="https://ipinfo.io" target="_blank">IPinfo</a></span>
 							</div>
 
 							<hr>
@@ -337,6 +365,14 @@
 			<h1>Connections</h1>
 
 			<ul>
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="open" data-optiongroup="settings" name="open">
+						<label for="open">Always show the Requests table</label>
+					</div>
+					<span class="line indent helper-text">Always show the Requests table when the popup is opened</span>
+				</li>
+
 				<li>
 					<div class="line">
 						<input class="setting save-on-change" type="checkbox" id="dns" data-optiongroup="settings" name="dns">

@@ -36,11 +36,11 @@ function notification(title, message) {
  * @param {string} url
  * @param {4|6} v
  * @param {string} [cache]
- * @returns {Promise<[Array<number|bigint|string|null>[], string|null]>}
+ * @param {number} [retry]
+ * @returns {Promise<[Array<number|bigint|string|null>[], string|null, number|null]>}
  */
-function agetGeoIP(url, v, cache) {
+function agetGeoIP(url, v, cache, retry = 0) {
 	const alabel = `${label}${v}`;
-	console.time(alabel);
 	console.log(url);
 	const fetchInfo = {
 		method: "GET"
@@ -55,7 +55,7 @@ function agetGeoIP(url, v, cache) {
 
 			console.timeLog(alabel);
 
-			let GEOIP = text.split("\n").filter((r) => r.length).map((r) => r.split(/("[^"]+"|[^",]*)(?:,|$)/u).filter((x, i) => i % 2 !== 0).map((x) => x[0] === '"' && x[-1] === '"' ? x.slice(1, -1) : x));
+			let GEOIP = text.split("\n").filter((r) => r.length).map((r) => r.split(/("[^"]+"|[^",]*)(?:,|$)/u).filter((x, i) => i % 2 !== 0).map((x) => x.startsWith('"') && x.endsWith('"') ? x.slice(1, -1) : x));
 			// console.log(GEOIP);
 
 			console.timeLog(alabel);
@@ -63,6 +63,7 @@ function agetGeoIP(url, v, cache) {
 			switch (settings.GeoDB) {
 				case 1:
 				case 2:
+				case 9:
 				case 3:
 				case 4:
 				case 5:
@@ -80,13 +81,22 @@ function agetGeoIP(url, v, cache) {
 			console.timeLog(alabel);
 
 			const modified = response.headers.get("Last-Modified");
-			// console.log(Array.from(response.headers.entries()), modified);
-			return [GEOIP, modified];
+			let length = response.headers.get("Content-Length");
+			length &&= Number.parseInt(length, 10);
+			console.log(Array.from(response.headers.entries()), modified, text.length, length);
+			return [GEOIP, modified, length];
 		}
+
 		console.error(response);
 		console.timeEnd(alabel);
 		return Promise.reject();
-
+	}).catch(async (error) => {
+		if (retry >= 2) {
+			throw error;
+		}
+		console.error(error);
+		await delay((1 << retry) * 1000);
+		return agetGeoIP(url, v, cache, retry + 1);
 	});
 }
 
@@ -99,38 +109,34 @@ function agetGeoIP(url, v, cache) {
  * @returns {Promise<void>}
  */
 async function getGeoLoc(date, languages, cache) {
-	const URL = "https://gitlab.com/tdulcet/ip-geolocation-dbs/-/raw/main/";
-	let url4 = null;
-	let url6 = null;
+	let dir = null;
+	let file4 = "ipv4.csv";
+	let file6 = "ipv6.csv";
 
 	switch (settings.GeoDB) {
 		case 1:
-			url4 = `${URL}geo-whois-asn-country/ipv4.csv?inline=false`;
-			url6 = `${URL}geo-whois-asn-country/ipv6.csv?inline=false`;
+			dir = "geo-whois-asn-country";
 			break;
 		case 2:
-			url4 = `${URL}iptoasn-country/ipv4.csv?inline=false`;
-			url6 = `${URL}iptoasn-country/ipv6.csv?inline=false`;
+			dir = "iptoasn-country";
+			break;
+		case 9:
+			dir = "ipinfo-country";
 			break;
 		case 3:
-			url4 = `${URL}dbip-country/ipv4.csv?inline=false`;
-			url6 = `${URL}dbip-country/ipv6.csv?inline=false`;
+			dir = "dbip-country";
 			break;
 		case 4:
-			url4 = `${URL}ip2location-country/ipv4.csv?inline=false`;
-			url6 = `${URL}ip2location-country/ipv6.csv?inline=false`;
+			dir = "ip2location-country";
 			break;
 		case 5:
-			url4 = `${URL}geolite2-country/ipv4.csv?inline=false`;
-			url6 = `${URL}geolite2-country/ipv6.csv?inline=false`;
+			dir = "geolite2-country";
 			break;
 		case 6:
-			url4 = `${URL}dbip-city/ipv4.csv?inline=false`;
-			url6 = `${URL}dbip-city/ipv6.csv?inline=false`;
+			dir = "dbip-city";
 			break;
 		case 7:
-			url4 = `${URL}ip2location-city/ipv4.csv?inline=false`;
-			url6 = `${URL}ip2location-city/ipv6.csv?inline=false`;
+			dir = "ip2location-city";
 			break;
 		case 8: {
 			// English, Simplified Chinese, Spanish, Brazilian Portuguese, Russian, Japanese, French, and German
@@ -140,20 +146,32 @@ async function getGeoLoc(date, languages, cache) {
 			const locale = languages.find((e) => locales.includes(e)) || locales[1];
 			console.log(languages, locale);
 
-			url4 = `${URL}geolite2-city/ipv4-${locale}.csv?inline=false`;
-			url6 = `${URL}geolite2-city/ipv6-${locale}.csv?inline=false`;
+			dir = "geolite2-city";
+			file4 = `ipv4-${locale}.csv`;
+			file6 = `ipv6-${locale}.csv`;
 			break;
 		}
 	}
 
+	const url = "https://gitlab.com/tdulcet/ip-geolocation-dbs/-/raw/main/";
+	const url4 = `${url}${dir}/${file4}?inline=false`;
+	const url6 = `${url}${dir}/${file6}?inline=false`;
+
 	if (!cache) {
-		notification(`${emojis[7]} Updating geolocation databases`, "Checking for updated IP geolocation databases.\nYour browser may briefly slowdown after the download while it is processing the databases.");
+		notification("⬇️ Updating geolocation databases", "Checking for updated IP geolocation databases.\nYour browser may briefly slowdown after the download while it is processing the databases.");
 	}
+
+	const label4 = `${label}4`;
+	const label6 = `${label}6`;
+	console.time(label4);
+	console.time(label6);
+
+	const start = performance.now();
 
 	const promise4 = agetGeoIP(url4, 4, cache);
 	const promise6 = agetGeoIP(url6, 6, cache);
 
-	await Promise.all([promise4, promise6]).then(([[GeoIPv4, modified4], [GeoIPv6, modified6]]) => {
+	await Promise.all([promise4, promise6]).then(([[GeoIPv4, modified4, length4], [GeoIPv6, modified6, length6]]) => {
 		// https://bugzilla.mozilla.org/show_bug.cgi?id=1674342
 		// console.log(GeoIPv4, GeoIPv6, date);
 		console.log(GeoIPv4.length, GeoIPv6.length, date);
@@ -163,19 +181,28 @@ async function getGeoLoc(date, languages, cache) {
 		};
 
 		// The full location databases are too large to store in local storage, which is limited to 255 MiB
-		message.GEOIP = settings.GeoDB >= 1 && settings.GeoDB <= 5 ? { GeoIPv4, GeoIPv6, GeoDB: settings.GeoDB, date } : { GeoDB: settings.GeoDB, date };
+		message.GEOIP = [1, 2, 9, 3, 4, 5].includes(settings.GeoDB) ? { GeoIPv4, GeoIPv6, GeoDB: settings.GeoDB, date } : { GeoDB: settings.GeoDB, date };
 
 		postMessage(message);
 
 		parseGeoLoc(GeoIPv4, GeoIPv6);
 
+		const end = performance.now();
+		const time = outputseconds(Math.floor((end - start) / 1000));
+
 		if (!cache) {
-			notification(`${emojis[7]} Geolocation databases updated`, `The IP geolocation databases were successfully updated.\n\nIPv4 ${modified4 ? `updated: ${outputdate(modified4)}, ` : ""}rows: ${numberFormat.format(GeoIPv4.length)}\nIPv6 ${modified6 ? `updated: ${outputdate(modified6)}, ` : ""}rows: ${numberFormat.format(GeoIPv6.length)}`);
+			notification("⬇️ Geolocation databases updated", `The IP geolocation databases were successfully updated in ${time}.\n\nIPv4 ${modified4 ? `updated: ${outputdate(modified4)}, ` : ""}rows: ${numberFormat.format(GeoIPv4.length)}${length4 ? `, size: ${outputunit(length4, false)}B` : ""}\nIPv6 ${modified6 ? `updated: ${outputdate(modified6)}, ` : ""}rows: ${numberFormat.format(GeoIPv6.length)}${length6 ? `, size: ${outputunit(length6, false)}B` : ""}`);
 		}
 
-		console.timeEnd(`${label}4`);
-		console.timeEnd(`${label}6`);
+		console.log(`The geolocation databases were updated in ${time}.`);
+	}).catch((error) => {
+		console.error(error);
+
+		notification(`❌ Unable to ${cache ? "load" : "update"} geolocation databases`, `Error: Unable to ${cache ? "load" : "update"} the IP geolocation databases: ${error}.`);
 	});
+
+	console.timeEnd(label4);
+	console.timeEnd(label6);
 }
 
 /**
@@ -189,6 +216,7 @@ function parseGeoLoc(IPv4, IPv6) {
 	/* switch (settings.GeoDB) {
 		case 1:
 		case 2:
+		case 9:
 		case 3:
 		case 4:
 		case 5:
@@ -236,6 +264,7 @@ function searchGeoIP(GeoIP, address) {
 			switch (settings.GeoDB) {
 				case 1:
 				case 2:
+				case 9:
 				case 3:
 				case 4:
 				case 5: {

@@ -14,6 +14,8 @@ const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", /* "🔵", "
 // const digitEmojis = Object.freeze([...[...new Array(10)].map((x, i) => `${i}️`), ..."⓿❶❷❸❹❺❻❼❽❾", ..."⓪①②③④⑤⑥⑦⑧⑨"]);
 const digitEmojis = Object.freeze([...new Array(10)].map((x, i) => `${i}️⃣`));
 
+const suffix_power_char = Object.freeze(["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]);
+
 // Ascii85:  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstu
 // Z85:      0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-:+=^!/*?&<>()[]{}@%$#
 // RFC 1924: 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~
@@ -28,6 +30,8 @@ const numberFormat1 = new Intl.NumberFormat([], { style: "unit", unit: "day", un
 const numberFormat2 = new Intl.NumberFormat([], { style: "unit", unit: "hour", unitDisplay: "long" });
 const numberFormat3 = new Intl.NumberFormat([], { style: "unit", unit: "minute", unitDisplay: "long" });
 const numberFormat4 = new Intl.NumberFormat([], { style: "unit", unit: "second", unitDisplay: "long" });
+const numberFormat5 = new Intl.NumberFormat([], { style: "unit", unit: "millisecond", unitDisplay: "long" });
+const numberFormat6 = new Intl.NumberFormat([], { style: "unit", unit: "millisecond", unitDisplay: "short" });
 
 const formatter1 = new Intl.ListFormat();
 
@@ -43,6 +47,49 @@ const IPv4RE = new RegExp(`^${IPv4}$`, "u");
 // \p{ASCII_Hex_Digit}
 const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
 const IPv6RE = new RegExp(`^${IPv6}$`, "u");
+
+/**
+ * Auto-scale number to unit.
+ * Adapted from: https://github.com/tdulcet/Numbers-Tool/blob/master/numbers.cpp
+ *
+ * @param {number} number
+ * @param {boolean} scale
+ * @returns {string}
+ */
+function outputunit(number, scale) {
+	let str = "";
+
+	const scale_base = scale ? 1000 : 1024;
+
+	let power = 0;
+	while (Math.abs(number) >= scale_base) {
+		++power;
+		number /= scale_base;
+	}
+
+	let anumber = Math.abs(number);
+	anumber += anumber < 10 ? 0.0005 : anumber < 100 ? 0.005 : anumber < 1000 ? 0.05 : 0.5;
+
+	if (number !== 0 && anumber < 1000 && power > 0) {
+		str = numberFormat.format(number);
+
+		const length = 5 + (number < 0 ? 1 : 0);
+		if (str.length > length) {
+			const prec = anumber < 10 ? 3 : anumber < 100 ? 2 : 1;
+			str = number.toLocaleString([], { maximumFractionDigits: prec });
+		}
+	} else {
+		str = number.toLocaleString([], { maximumFractionDigits: 0 });
+	}
+
+	str += `\u00A0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
+
+	if (!scale && power > 0) {
+		str += "i";
+	}
+
+	return str;
+}
 
 /**
  * Output IP address in base 85
@@ -208,7 +255,7 @@ function getHSTS(header) {
 	const aheader = {};
 	for (const item of header.split(/([\w-]+(?:=(?:"[^"]+"|[^";\s]*))?)(?:\s*;\s*|$)/u).filter((x, i) => i % 2 !== 0)) {
 		const [type, value] = item.split("=");
-		aheader[type.toLowerCase()] = value && value[0] === '"' && value[-1] === '"' ? value.slice(1, -1) : value;
+		aheader[type.toLowerCase()] = value && value.startsWith('"') && value.endsWith('"') ? value.slice(1, -1) : value;
 	}
 	return aheader;
 }
@@ -241,4 +288,16 @@ function getmessage(securityInfo) {
  */
 function countryCode(country) {
 	return Array.from(country.toUpperCase(), (c) => String.fromCodePoint(c.codePointAt() + 127397)).join("");
+}
+
+/**
+ * Delay.
+ *
+ * @param {number} delay
+ * @returns {Promise<void>}
+ */
+function delay(delay) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, delay);
+	});
 }

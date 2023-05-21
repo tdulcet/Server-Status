@@ -26,6 +26,7 @@ const settings = {
 	dns: null,
 	fullipv6: null,
 	compactipv6: null,
+	open: null,
 	blocked: null,
 	GeoDB: null,
 	update: null,
@@ -198,7 +199,8 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
  * @param {Object} tab.securityInfo
  * @returns {Promise<void>}
  */
-async function updateIcon(tabId, { details, securityInfo }) {
+async function updateIcon(tabId, tab) {
+	const { details, securityInfo } = tab;
 	// console.log(tabId, details, securityInfo);
 	let icon = null;
 	const title = [`𝗦𝘁𝗮𝘁𝘂𝘀:  ${details.statusLine}`]; // Status
@@ -353,72 +355,81 @@ async function updateIcon(tabId, { details, securityInfo }) {
 			}
 			// console.assert(!!header === securityInfo.hsts, "Error: HSTS", header, securityInfo.hsts);
 		} else {
-			// https://bugzilla.mozilla.org/show_bug.cgi?id=1778454
-			/* if (securityInfo.hsts) {
-				atitle += "✔ Yes";
-				if (details.responseHeaders) {
-					// console.log(details.responseHeaders);
-					const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
-					if (header) {
-						const aheader = getHSTS(header.value);
-						// console.log(header, aheader);
-						atitle += ` ${outputseconds(parseInt(aheader["max-age"], 10))})`;
-					}
-				}
-			} else {
-				atitle += "✖ No";
-			} */
 			atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
 		}
 		// HSTS
 		title.push(`𝗛𝗦𝗧𝗦:  ${atitle}`);
 	}
 
-	if (settings.icon === 4) {
-		const statusCode = details.statusCode;
-		if (statusCode >= 100 && statusCode < 200) {
-			icon = statusIcons[0];
-			backgroundColor = "green";
-		} else if (statusCode >= 200 && statusCode < 300) {
-			icon = statusIcons[1];
-			backgroundColor = "green";
-		} else if (statusCode >= 300 && statusCode < 400) {
-			icon = statusIcons[2];
-			backgroundColor = "yellow";
-		} else {
-			// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
-			icon = statusCode === 418 ? statusIcons[4] : statusIcons[3];
-			backgroundColor = "red";
-		}
-		text = statusCode.toString();
-	} else if (settings.icon === 5) {
-		// Get HTTP version
-		const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
-		const regexResult = re.exec(details.statusLine);
-		console.assert(regexResult, "Error: Unknown HTTP Status", details.statusLine);
-		if (regexResult) {
-			const version = regexResult[1];
-			const [major, minor] = version.split(".").map((x) => Number.parseInt(x, 10));
-			icon = major < digitIcons.length ? digitIcons[major] : icons[2];
-			switch (major) {
-				case 0:
-					backgroundColor = "red";
-					break;
-				case 1:
-					backgroundColor = minor === 0 ? "red" : "blue";
-					break;
-				case 2:
-					backgroundColor = "teal";
-					break;
-				default: if (major >= 3) {
-					backgroundColor = "green";
-				}
+	switch (settings.icon) {
+		case 4: {
+			const statusCode = details.statusCode;
+			if (statusCode >= 100 && statusCode < 200) {
+				icon = statusIcons[0];
+				backgroundColor = "blue";
+			} else if (statusCode >= 200 && statusCode < 300) {
+				icon = statusIcons[1];
+				backgroundColor = "green";
+			} else if (statusCode >= 300 && statusCode < 400) {
+				icon = statusIcons[2];
+				backgroundColor = "yellow";
+			} else {
+				// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
+				icon = statusCode === 418 ? statusIcons[4] : statusIcons[3];
+				backgroundColor = "red";
 			}
-			text = version;
-		} else {
-			icon = icons[2];
-			text = details.statusLine;
-			backgroundColor = settings.color;
+			text = statusCode.toString();
+			break;
+		}
+		case 5: {
+			// Get HTTP version
+			const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
+			const regexResult = re.exec(details.statusLine);
+			console.assert(regexResult, "Error: Unknown HTTP Status", details.statusLine);
+			if (regexResult) {
+				const version = regexResult[1];
+				const [major, minor] = version.split(".").map((x) => Number.parseInt(x, 10));
+				icon = major < digitIcons.length ? digitIcons[major] : icons[2];
+				switch (major) {
+					case 0:
+						backgroundColor = "red";
+						break;
+					case 1:
+						backgroundColor = minor === 0 ? "red" : "blue";
+						break;
+					case 2:
+						backgroundColor = "teal";
+						break;
+					default: if (major >= 3) {
+						backgroundColor = "green";
+					}
+				}
+				text = version;
+			} else {
+				icon = icons[2];
+				text = details.statusLine;
+				backgroundColor = settings.color;
+			}
+			break;
+		}
+		case 7: {
+			if (tab.performance) {
+				const [navigation] = tab.performance.navigation;
+				const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
+				const load = navigation.loadEventStart - start;
+				if (load <= 2500) {
+					icon = statusIcons[1];
+					backgroundColor = "green";
+				} else if (load <= 4000) {
+					icon = statusIcons[2];
+					backgroundColor = "yellow";
+				} else {
+					icon = statusIcons[3];
+					backgroundColor = "red";
+				}
+				text = numberFormat.format(load);
+			}
+			break;
 		}
 	}
 	setIcon(tabId, icon, title.join("  \n"), text, backgroundColor);
@@ -433,7 +444,7 @@ async function updateIcon(tabId, { details, securityInfo }) {
 async function updateActiveTab(details) {
 	if (details.frameId === 0) {
 		// console.log(details.url);
-		// console.log("tabs.onUpdated:", details.url, new URL(details.url).origin);
+		// console.log("webNavigation.onCommitted:", details.url, new URL(details.url).origin);
 		if (details.tabId && details.tabId !== TAB_ID_NONE) {
 			const aurl = new URL(details.url);
 			const title = aurl.protocol === "http:" || aurl.protocol === "https:" ? ", try ⟳ refreshing the page" : "";
@@ -671,9 +682,10 @@ function punycode(hostname) {
  * Get the public suffix list.
  *
  * @param {number} date
+ * @param {number} [retry]
  * @returns {Promise<void>}
  */
-function getPSL(date) {
+function getPSL(date, retry = 0) {
 	console.time(label);
 	const url = "https://publicsuffix.org/list/public_suffix_list.dat";
 	console.log(url);
@@ -692,12 +704,18 @@ function getPSL(date) {
 			console.timeLog(label);
 
 			parsePSL(PSL);
-
-			console.timeEnd(label);
 		} else {
 			console.error(response);
-			console.timeEnd(label);
 		}
+
+		console.timeEnd(label);
+	}).catch(async (error) => {
+		if (retry >= 2) {
+			throw error;
+		}
+		console.error(error);
+		await delay((1 << retry) * 1000);
+		return getPSL(date, retry + 1);
 	});
 }
 
@@ -748,7 +766,7 @@ function createRegEx(tree) {
 function createTree(arr) {
 	const tree = {};
 
-	arr.sort((a, b) => b.length - a.length)
+	arr.sort((a, b) => b.length - a.length);
 
 	for (const str of arr) {
 		let temp = tree;
@@ -775,6 +793,7 @@ function createTree(arr) {
  * @returns {void}
  */
 function parsePSL(PSL) {
+	const start = performance.now();
 	suffixes = [];
 	exceptions = [];
 
@@ -797,6 +816,8 @@ function parsePSL(PSL) {
 	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`, "u");
 
 	// console.log(suffixes, exceptions);
+	const end = performance.now();
+	console.log(`The PSL was parsed in ${end - start} ms.`);
 }
 
 /**
@@ -907,6 +928,7 @@ function sendSettings(details, tab) {
 			WARNDAYS: settings.warndays,
 			FULLIPv6: settings.fullipv6,
 			COMPACTIPv6: settings.compactipv6,
+			OPEN: settings.open,
 			BLOCKED: settings.blocked,
 			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
 			DNS: settings.dns,
@@ -937,6 +959,7 @@ function setSettings(asettings) {
 	settings.warndays = asettings.warndays;
 	settings.fullipv6 = asettings.fullipv6;
 	settings.compactipv6 = asettings.compactipv6;
+	settings.open = asettings.open;
 	settings.blocked = asettings.blocked;
 	settings.https = asettings.https;
 	const GeoDB = Number.parseInt(asettings.GeoDB, 10);
@@ -1115,6 +1138,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				WARNDAYS: settings.warndays,
 				FULLIPv6: settings.fullipv6,
 				COMPACTIPv6: settings.compactipv6,
+				OPEN: settings.open,
 				BLOCKED: settings.blocked,
 				HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,
 				DNS: settings.dns,
@@ -1153,6 +1177,17 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				if (tab.details && tab.details.statusLine) {
 					updateIcon(tabId, tab);
 				}
+			}
+			break;
+		}
+		case CONTENT: {
+			const tab = tabs.get(sender.tab.id);
+			if (tab) {
+				tab.performance = message.performance;
+			}
+			console.log(message);
+			if (settings.icon === 7) {
+				updateIcon(sender.tab.id, tab);
 			}
 			break;
 		}

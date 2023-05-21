@@ -2,13 +2,12 @@
 
 const TAB_ID_NONE = browser.tabs.TAB_ID_NONE;
 
-const suffix_power_char = Object.freeze(["", "K", "M", "G", "T", "P", "E", "Z", "Y"]);
-
 const formatter2 = new Intl.ListFormat([], { style: "short" });
 
 const aIPv6RE = new RegExp(String.raw`^\[${IPv6}\]$`, "u");
 
 let WARNDAYS = 3;
+let OPEN = true;
 let BLOCKED = true;
 let FULLIPv6 = false;
 let COMPACTIPv6 = false;
@@ -70,49 +69,6 @@ function encodeXML(text) {
 		"'": "&apos;"
 	};
 	return text.replace(/[&<>"']/gu, (m) => map[m]);
-}
-
-/**
- * Auto-scale number to unit.
- * Adapted from: https://github.com/tdulcet/Numbers-Tool/blob/master/numbers.cpp
- *
- * @param {number} number
- * @param {boolean} scale
- * @returns {string}
- */
-function outputunit(number, scale) {
-	let str = "";
-
-	const scale_base = scale ? 1000 : 1024;
-
-	let power = 0;
-	while (Math.abs(number) >= scale_base) {
-		++power;
-		number /= scale_base;
-	}
-
-	let anumber = Math.abs(number);
-	anumber += anumber < 10 ? 0.0005 : anumber < 100 ? 0.005 : anumber < 1000 ? 0.05 : 0.5;
-
-	if (number !== 0 && anumber < 1000 && power > 0) {
-		str = numberFormat.format(number);
-
-		const length = 5 + (number < 0 ? 1 : 0);
-		if (str.length > length) {
-			const prec = anumber < 10 ? 3 : anumber < 100 ? 2 : 1;
-			str = number.toLocaleString([], { maximumFractionDigits: prec });
-		}
-	} else {
-		str = number.toLocaleString([], { maximumFractionDigits: 0 });
-	}
-
-	str += `\u00A0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
-
-	if (!scale && power > 0) {
-		str += "i";
-	}
-
-	return str;
 }
 
 /**
@@ -199,8 +155,16 @@ function timerTick(time) {
  * @returns {string}
  */
 function outputtime(time) {
-	// return (time / 1000).toLocaleString() + '\xa0seconds';
-	return numberFormat4.format(time / 1000);
+	const s = Math.floor(time / 1000);
+	const ms = time % 1000;
+	let text = "";
+	if (s > 0) {
+		text += `${numberFormat4.format(s)} `;
+	}
+	if (s > 0 || ms > 0) {
+		text += numberFormat5.format(ms);
+	}
+	return text;
 }
 
 /**
@@ -523,7 +487,7 @@ function checkblacklists(hostname, ipv4s, ipv6s) {
  * @returns {Promise<Array<{start: number|bigint, end: number|bigint, country: string, state2?: string, state1?: string, city?: string, lat?: number, lon?: number}|null>>}
  */
 function getGeoIP(addresses) {
-	return browser.runtime.sendMessage({ type: LOCATION, addresses }).then((message, sender) => {
+	return browser.runtime.sendMessage({ type: LOCATION, addresses }).then((message) => {
 		if (message.type === LOCATION) {
 			// console.log(message);
 			return message.locations;
@@ -577,9 +541,39 @@ function click(event) {
 		copy(url);
 	}).finally(() => {
 		setTimeout(() => {
-			window.close();
+			close();
 		}, 1000);
 	});
+}
+
+/**
+ * Update performance data.
+ *
+ * @param {Object} performance
+ * @returns {void}
+ */
+function updatePerformance(performance) {
+	const [navigation] = performance.navigation;
+	const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
+	const load = document.getElementById("load");
+	load.title = outputtime(navigation.loadEventStart - start);
+	load.textContent = numberFormat6.format(navigation.loadEventStart - start);
+
+	const ttfb = document.getElementById("ttfb");
+	ttfb.title = outputtime(navigation.responseStart - start);
+	ttfb.textContent = numberFormat6.format(navigation.responseStart - start);
+
+	const fcp = performance.paint.find((x) => x.name === "first-contentful-paint");
+	const paint = document.getElementById("paint");
+	paint.title = fcp ? outputtime(fcp.startTime) : "";
+	paint.textContent = fcp ? numberFormat6.format(fcp.startTime) : "None";
+
+	const size = navigation.transferSize;
+	document.getElementById("size").textContent = size === 0 && navigation.decodedBodySize > 0 ? "Cached" : `${outputunit(size, false)}B${size >= 1000 ? ` (${outputunit(size, true)}B)` : ""}`;
+
+	for (const element of document.querySelectorAll(".content")) {
+		element.classList.remove("hidden");
+	}
 }
 
 /**
@@ -776,22 +770,14 @@ function updatePopup(tabId, tab) {
 
 	browser.tabs.sendMessage(tabId, { type: CONTENT }).then((message) => {
 		if (message.type === CONTENT) {
-			const navigation = message.navigation[0];
-			const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
-			document.getElementById("load").textContent = outputtime(navigation.loadEventStart - start);
-			document.getElementById("ttfb").textContent = outputtime(navigation.responseStart - start);
-			const paint = message.paint;
-			document.getElementById("paint").textContent = paint.length ? outputtime(paint[0].startTime) : "None";
-			const size = navigation.transferSize;
-			document.getElementById("size").textContent = `${outputunit(size, false)}B${size >= 1000 ? ` (${outputunit(size, true)}B)` : ""}`;
-			for (const element of document.querySelectorAll(".content")) {
-				element.classList.remove("hidden");
-			}
 			// console.log(message);
 		}
 	}).catch(handleError).finally(() => {
 		document.querySelector(".no-content").classList.add("hidden");
 	});
+	if (tab.performance) {
+		updatePerformance(tab.performance);
+	}
 
 	const url = new URL(details.url);
 	const ipv4 = IPv4RE.test(url.hostname);
@@ -856,6 +842,15 @@ function updatePopup(tabId, tab) {
 	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis[1];
 	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Access denied for this page");
 	document.getElementById("host").innerHTML = outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6);
+	if (details.responseHeaders) {
+		// console.log(details.responseHeaders);
+		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "server");
+		if (header) {
+			const server = document.getElementById("server");
+			server.textContent = header.value;
+			document.querySelector(".server").classList.remove("hidden");
+		}
+	}
 	if (GeoDB) {
 		if (details.ip) {
 			const location = document.getElementById("location");
@@ -907,7 +902,7 @@ function updatePopup(tabId, tab) {
 			temp.title = issuer;
 			temp.textContent = `${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} ${countryCode(aissuer.C)}` : ""}`;
 			if (certificate.rawDER) {
-				const url = `about:certificate?${securityInfo.certificates.map((cert) => `cert=${encodeURIComponent(btoa(String.fromCharCode(...cert.rawDER)))}`).join("&")}`;
+				const url = `about:certificate?${new URLSearchParams(securityInfo.certificates.map((cert) => ["cert", encodeURIComponent(btoa(String.fromCharCode(...cert.rawDER)))]))}`;
 				const link = document.getElementById("link");
 				link.innerHTML = `<a href="${url}" target="_blank" class="button" title="Click to View Certificate">🔗</a>`;
 				link.addEventListener("click", click);
@@ -953,25 +948,8 @@ function updatePopup(tabId, tab) {
 				} else {
 					hsts.textContent = securityInfo.hsts ? `${emojis[4]}\u00A0Yes` : `${certificateEmojis[3]}\u00A0No`;
 				}
-				console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
+				// console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
-				// https://bugzilla.mozilla.org/show_bug.cgi?id=1778454
-				/* if (securityInfo.hsts) {
-					let text = `${emojis[4]}\xa0Yes`;
-					if (details.responseHeaders) {
-						// console.log(details.responseHeaders);
-						const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
-						if (header) {
-							const aheader = getHSTS(header.value);
-							// console.log(header, aheader);
-							text += `\xa0\xa0(${outputseconds(parseInt(aheader["max-age"], 10))})`;
-							hsts.title = header.value;
-						}
-					}
-					hsts.textContent = text;
-				} else {
-					hsts.textContent = `${certificateEmojis[3]}\xa0No`;
-				} */
 				hsts.textContent = securityInfo.hsts ? `${emojis[5]}\u00A0Yes` : `${certificateEmojis[3]}\u00A0No`;
 			}
 
@@ -988,6 +966,10 @@ function updatePopup(tabId, tab) {
 
 	document.getElementById("requests").textContent = "Loading…";
 	updateTable(requests);
+
+	if (OPEN) {
+		document.getElementById("details").open = true;
+	}
 }
 
 /**
@@ -997,7 +979,7 @@ function updatePopup(tabId, tab) {
  * @returns {void}
  */
 function getstatus(tabId) {
-	browser.runtime.sendMessage({ type: POPUP, tabId }).then((message, sender) => {
+	browser.runtime.sendMessage({ type: POPUP, tabId }).then((message) => {
 		if (message.type === POPUP) {
 			const data = document.getElementById("data");
 
@@ -1006,6 +988,7 @@ function getstatus(tabId) {
 					WARNDAYS = message.WARNDAYS;
 					FULLIPv6 = message.FULLIPv6;
 					COMPACTIPv6 = message.COMPACTIPv6;
+					OPEN = message.OPEN;
 					BLOCKED = message.BLOCKED;
 					HTTPS = message.HTTPS;
 					DNS = message.DNS;
@@ -1066,6 +1049,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			WARNDAYS = message.WARNDAYS;
 			FULLIPv6 = message.FULLIPv6;
 			COMPACTIPv6 = message.COMPACTIPv6;
+			OPEN = message.OPEN;
 			BLOCKED = message.BLOCKED;
 			HTTPS = message.HTTPS;
 			DNS = message.DNS;
@@ -1083,6 +1067,11 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			}
 
 			return Promise.resolve();
+		}
+	} else if (message.type === CONTENT) {
+		if (sender.tab.id === tabId) {
+			updatePerformance(message.performance);
+			// console.log(message);
 		}
 	}
 });

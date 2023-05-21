@@ -16,6 +16,7 @@ const defaultSettings = {
 		icon: "1",
 		color: "#0000ff", // Blue
 		warndays: 3, // Days
+		open: false,
 		dns: true,
 		fullipv6: false,
 		compactipv6: false,
