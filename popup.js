@@ -55,23 +55,6 @@ function notification(title, message) {
 }
 
 /**
- * Encode XML.
- *
- * @param {string} text
- * @returns {string}
- */
-function encodeXML(text) {
-	const map = {
-		"&": "&amp;",
-		"<": "&lt;",
-		">": "&gt;",
-		'"': "&quot;",
-		"'": "&apos;"
-	};
-	return text.replace(/[&<>"']/gu, (m) => map[m]);
-}
-
-/**
  * Get seconds as digital clock.
  *
  * @param {number} sec_num
@@ -168,11 +151,24 @@ function outputtime(time) {
 }
 
 /**
+ * Create link.
+ *
+ * @param {string} link
+ * @returns {HTMLAnchorElement}
+ */
+function createlink(link) {
+	const a = document.createElement("a");
+	a.href = link;
+	a.target = "_blank";
+	return a;
+}
+
+/**
  * Output map link.
  *
  * @param {number} latitude
  * @param {number} longitude
- * @returns {string}
+ * @returns {Array.<HTMLElement|string>}
  */
 function map(latitude, longitude) {
 	let url = "";
@@ -194,7 +190,11 @@ function map(latitude, longitude) {
 			break;
 		// No default
 	}
-	return `(<a href="${url}" target="_blank" class="button" title="Click to View Map">🗺️</a>)`;
+	const a = createlink(url);
+	a.title = "Click to View Map";
+	a.textContent = "🗺️";
+	a.classList.add("button");
+	return ["(", a, ")"];
 }
 
 /**
@@ -202,7 +202,7 @@ function map(latitude, longitude) {
  *
  * @param {string} hostname
  * @param {string} address
- * @returns {string}
+ * @returns {Array.<HTMLElement|string>}
  */
 function lookup(hostname, address) {
 	let url = "";
@@ -216,7 +216,11 @@ function lookup(hostname, address) {
 			break;
 		// No default
 	}
-	return `(<a href="${url}" target="_blank" class="button" title="Click to Lookup IP address">🔍</a>)`;
+	const a = createlink(url);
+	a.title = "Click to Lookup IP address";
+	a.textContent = "🔍";
+	a.classList.add("button");
+	return ["(", a, ")"];
 }
 
 /**
@@ -227,17 +231,26 @@ function lookup(hostname, address) {
  * @param {string|null} [current]
  * @param {boolean} [ipv4]
  * @param {boolean} [ipv6]
- * @returns {string}
+ * @returns {Array.<HTMLElement|string>}
  */
 function outputaddress(address, hostname, current, ipv4, ipv6) {
 	ipv4 ??= IPv4RE.test(address);
 	ipv6 ??= IPv6RE.test(address);
 	console.assert(ipv4 || ipv6, "Error: Unknown IP address", address);
 
-	const aaddress = ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? encodeXML(outputbase85(IPv6toInt(expand(address).join("")))) : address : address;
-	let text = `<a href="http${HTTPS ? "s" : ""}://${ipv6 ? `[${address}]` : address}" target="_blank" class="${ipv6 ? "ipv6" : "ipv4"}">${address === current ? `<strong>${aaddress}</strong>` : aaddress}</a>`;
+	const aaddress = ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? outputbase85(IPv6toInt(expand(address).join(""))) : address : address;
+	const a = createlink(`http${HTTPS ? "s" : ""}://${ipv6 ? `[${address}]` : address}`);
+	if (address === current) {
+		const strong = document.createElement("strong");
+		strong.textContent = aaddress;
+		a.append(strong);
+	} else {
+		a.textContent = aaddress;
+	}
+	a.classList.add(ipv6 ? "ipv6" : "ipv4");
+	const text = [a];
 	if (LOOKUP) {
-		text += `&nbsp;${lookup(hostname, address)}`;
+		text.push("\u00A0", ...lookup(hostname, address));
 	}
 	return text;
 }
@@ -253,7 +266,11 @@ function outputaddress(address, hostname, current, ipv4, ipv6) {
  * @returns {string}
  */
 function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
-	return formatter2.format(addresses.map((x) => outputaddress(x, hostname, current, ipv4, ipv6)));
+	return formatter2.format(addresses.map((x) => {
+		const span = document.createElement("span");
+		span.append(...outputaddress(x, hostname, current, ipv4, ipv6));
+		return span.innerHTML;
+	}));
 	// .join(', ')
 }
 
@@ -264,7 +281,7 @@ function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
  * @param {string} protocol
  * @param {boolean} [ipv4]
  * @param {boolean} [ipv6]
- * @returns {string}
+ * @returns {HTMLAnchorElement}
  */
 function outputhost(hostname, protocol, ipv4, ipv6) {
 	ipv4 ??= IPv4RE.test(hostname);
@@ -278,13 +295,21 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 		if (labels.length > alabels.length) {
 			const domain = labels.slice(-(alabels.length + 1)).join(".");
 			const subdomain = labels.slice(0, -(alabels.length + 1)).join(".");
-			return `<a href="${protocol}//${hostname}" target="_blank">${subdomain ? `${subdomain}.` : ""}<strong>${domain}</strong></a>`;
+			const a = createlink(`${protocol}//${hostname}`);
+			const strong = document.createElement("strong");
+			strong.textContent = domain;
+			if (subdomain) {
+				a.textContent = `${subdomain}.`;
+			}
+			a.append(strong);
+			return a;
 		}
 		console.error("Error: Hostname has invalid suffix", hostname);
-
 	}
 
-	return `<a href="${protocol}//${hostname}" target="_blank">${hostname}</a>`;
+	const a = createlink(`${protocol}//${hostname}`);
+	a.textContent = hostname;
+	return a;
 }
 
 /**
@@ -679,12 +704,12 @@ function updateTable(requests) {
 					cell.textContent = Array.from(new Set(arequest.map((obj) => obj.details.statusCode)), (key) => status(key)).join("");
 
 					cell = row.insertCell();
-					cell.innerHTML = outputhost(hostname, `http${HTTPS ? "s" : ""}:`);
+					cell.append(outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
 
 					const addresses = Array.from(new Set(arequest.map((obj) => obj.details.ip).filter(Boolean)));
 					cell = row.insertCell();
 					if (addresses.length) {
-						cell.innerHTML = addresses.map((x) => outputaddress(x, hostname, details.ip)).join("\n");
+						cell.append(...addresses.flatMap((x, i) => [...i ? ["\n"] : [], ...outputaddress(x, hostname, details.ip)]));
 					} else if (details.fromCache) {
 						const { details } = arequest[0];
 						if (details.responseHeaders) {
@@ -706,7 +731,7 @@ function updateTable(requests) {
 
 								cell.title = outputtitle(infos.map((x) => x?.country ? outputlocation(x) : "Unknown Location"));
 								if (MAP) {
-									cell.innerHTML = Array.from(new Set(infos), (x, i) => x?.country ? (i ? " " : "") + countryCode(x.country) + (x.lat != null && x.lon != null ? map(x.lat, x.lon) : "") : emojis[2]).join("");
+									cell.replaceChildren(...Array.from(new Set(infos), (x, i) => x?.country ? [...i ? [" "] : [], countryCode(x.country), ...x.lat != null && x.lon != null ? map(x.lat, x.lon) : []] : [emojis[2]]).flat());
 								} else {
 									cell.textContent = Array.from(new Set(infos.map((x) => x?.country)), (x) => x ? countryCode(x) : emojis[2]).join("");
 								}
@@ -729,7 +754,7 @@ function updateTable(requests) {
 					cell.textContent = "–";
 
 					cell = row.insertCell();
-					cell.innerHTML = outputhost(hostname, `http${HTTPS ? "s" : ""}:`);
+					cell.append(outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
 
 					cell = row.insertCell();
 					cell.textContent = "–";
@@ -760,6 +785,7 @@ function updateTable(requests) {
  * @param {Object} tab.securityInfo
  * @param {Map} tab.requests
  * @param {string} tab.error
+ * @param {Object} [tab.performance]
  * @returns {void}
  */
 function updatePopup(tabId, tab) {
@@ -791,10 +817,10 @@ function updatePopup(tabId, tab) {
 				const ipv4 = IPv4RE.test(details.ip);
 				const ipv6 = IPv6RE.test(details.ip);
 				if (ipv4) {
-					document.getElementById("ipv4").innerHTML = outputaddress(details.ip, url.hostname, null, ipv4, ipv6);
+					document.getElementById("ipv4").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv4").classList.remove("hidden");
 				} else if (ipv6) {
-					document.getElementById("ipv6").innerHTML = outputaddress(details.ip, url.hostname, null, ipv4, ipv6);
+					document.getElementById("ipv6").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv6").classList.remove("hidden");
 				}
 			} else if (details.fromCache) {
@@ -841,13 +867,23 @@ function updatePopup(tabId, tab) {
 
 	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis[1];
 	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Access denied for this page");
-	document.getElementById("host").innerHTML = outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6);
+	document.getElementById("host").replaceChildren(outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
 	if (details.responseHeaders) {
 		// console.log(details.responseHeaders);
 		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "server");
-		if (header) {
+		const aheader = details.responseHeaders.find((e) => e.name.toLowerCase() === "x-powered-by");
+		if (header || aheader) {
+			let text = "";
+			if (header) {
+				text = header.value;
+				if (aheader) {
+					text += ` (${aheader.value})`;
+				}
+			} else {
+				text = aheader.value;
+			}
 			const server = document.getElementById("server");
-			server.textContent = header.value;
+			server.textContent = text;
 			document.querySelector(".server").classList.remove("hidden");
 		}
 	}
@@ -861,7 +897,7 @@ function updatePopup(tabId, tab) {
 				if (info?.country) {
 					const text = `${outputlocation(info)}\u00A0${countryCode(info.country)}${info.lon != null ? `\u00A0${earth(info.lon)}` : ""}`;
 					if (MAP && info.lat != null && info.lon != null) {
-						location.innerHTML = `${text}&nbsp;&nbsp;${map(info.lat, info.lon)}`;
+						location.replaceChildren(`${text}\u00A0\u00A0`, ...map(info.lat, info.lon));
 					} else {
 						location.textContent = text;
 					}
@@ -902,10 +938,12 @@ function updatePopup(tabId, tab) {
 			temp.title = issuer;
 			temp.textContent = `${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} ${countryCode(aissuer.C)}` : ""}`;
 			if (certificate.rawDER) {
-				const url = `about:certificate?${new URLSearchParams(securityInfo.certificates.map((cert) => ["cert", encodeURIComponent(btoa(String.fromCharCode(...cert.rawDER)))]))}`;
-				const link = document.getElementById("link");
-				link.innerHTML = `<a href="${url}" target="_blank" class="button" title="Click to View Certificate">🔗</a>`;
-				link.addEventListener("click", click);
+				const a = createlink(`about:certificate?${new URLSearchParams(securityInfo.certificates.map((cert) => ["cert", encodeURIComponent(btoa(String.fromCharCode(...cert.rawDER)))]))}`);
+				a.title = "Click to View Certificate";
+				a.textContent = "🔗";
+				a.classList.add("button");
+				a.addEventListener("click", click);
+				document.getElementById("link").replaceChildren(a);
 			}
 			let emoji = "";
 			if (sec > 0) {

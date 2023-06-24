@@ -197,6 +197,7 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
  * @param {Object} tab
  * @param {Object} tab.details
  * @param {Object} tab.securityInfo
+ * @param {Object} [tab.performance]
  * @returns {Promise<void>}
  */
 async function updateIcon(tabId, tab) {
@@ -488,17 +489,9 @@ async function updateActiveTab(details) {
 
 browser.webNavigation.onCommitted.addListener(updateActiveTab);
 
-/**
- * Tab close handler.
- *
- * @param {number} tabId
- * @returns {void}
- */
-function tabCloseHandler(tabId) {
+browser.tabs.onRemoved.addListener((tabId) => {
 	tabs.delete(tabId);
-}
-
-browser.tabs.onRemoved.addListener(tabCloseHandler);
+});
 
 /**
  * Save request details.
@@ -697,7 +690,7 @@ function getPSL(date, retry = 0) {
 			console.timeLog(label);
 
 			const PSL = Object.freeze(text.split("\n").map((r) => r.trim()).filter((r) => r.length && !r.startsWith("//")));
-			console.log(PSL.length, date);
+			console.log(PSL.length, new Date(date));
 
 			browser.storage.local.set({ PSL: { PSL, date } });
 
@@ -988,7 +981,7 @@ function setSettings(asettings) {
 			browser.storage.local.get(["PSL"]).then((item) => {
 				console.log(item);
 				const d = new Date();
-				const PSL = item.PSL;
+				const { PSL } = item;
 
 				if (PSL) {
 					parsePSL(PSL.PSL);
@@ -1057,7 +1050,7 @@ function setSettings(asettings) {
 			browser.storage.local.get(["GEOIP"]).then(async (item) => {
 				console.log(item);
 				const d = new Date();
-				const GEOIP = item.GEOIP;
+				const { GEOIP } = item;
 
 				const message = {
 					type: BACKGROUND,
@@ -1184,11 +1177,11 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			const tab = tabs.get(sender.tab.id);
 			if (tab) {
 				tab.performance = message.performance;
+				if (settings.icon === 7) {
+					updateIcon(sender.tab.id, tab);
+				}
 			}
-			console.log(message);
-			if (settings.icon === 7) {
-				updateIcon(sender.tab.id, tab);
-			}
+			// console.log(message);
 			break;
 		}
 		// No default

@@ -151,7 +151,8 @@
 							<label for="icon7"><strong>Load time</strong></label>
 							<ul class="list">
 								<li>Icon and badge: Load time in milliseconds<br>(e.g. <span class="large">🟩</span> and
-									<code>2500</code> respectively or <span class="large">🟨</span> and <code>4000</code>)
+									<code>2500</code> respectively or <span class="large">🟨</span> and
+									<code>4000</code>)
 								</li>
 							</ul>
 						</div>
@@ -176,9 +177,9 @@
 					<fieldset data-type="radiogroup" class="setting save-on-input" data-optiongroup="settings">
 						<legend>Show the location for IP addresses</legend>
 						<span class="line indent helper-text">Requires the extension to periodically download a IP
-							geolocation database. Click <a
+							geolocation database for offline location lookups. Click this link for a <a
 								href="https://gitlab.com/tdulcet/ip-geolocation-dbs#database-comparison"
-								target="_blank">here</a>for a full comparison of the databases.</span>
+								target="_blank">full comparison of the databases</a>.</span>
 						<span class="line indent helper-text">Note that the databases do not have the location for all
 							IP addresses, so select the one with the most accuracy for your locations of interest. Users
 							with a very slow internet connection or limited memory (RAM) may want to select one of the
@@ -190,6 +191,7 @@
 								<input id="GeoDB0" type="radio" name="GeoDB" value="0">
 								<label for="GeoDB0"><strong>None</strong></label>
 							</div>
+							<span class="line indent helper-text">Do not download any IP geolocation database.</span>
 						</fieldset>
 
 						<fieldset>
@@ -438,8 +440,8 @@
 						<label for="suffix">Show the suffix for hostnames in popup</label>
 					</div>
 					<span class="line indent helper-text">Requires the extension to periodically download the <a
-							href="https://publicsuffix.org/" target="_blank">Public Suffix List</a>(PSL) from
-						Mozilla.</span>
+							href="https://publicsuffix.org/" target="_blank">Public Suffix List</a>(PSL) from Mozilla
+						for offline suffix lookups.</span>
 				</li>
 
 				<li>
@@ -461,10 +463,9 @@
 					</div>
 					<span class="line indent helper-text">Looks up the hostname and IP addresses in a <a
 							href="https://en.wikipedia.org/wiki/Domain_Name_System-based_blocklist" target="_blank">DNS
-							blacklist</a>(DNSBL). Click <a
-							href="https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists"
-							target="_blank">here</a>for a comparison of DNSBLs. Requires “Show all IP addresses”
-						above.</span>
+							blacklist</a>(DNSBL). Click this link for a <a
+							href="https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists" target="_blank">comparison
+							of DNSBLs</a>. Requires “Show all IP addresses” above.</span>
 					<ul>
 						<li>
 							<div class="line">

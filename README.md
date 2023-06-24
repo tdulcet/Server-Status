@@ -39,6 +39,7 @@ Users can hover over almost everything in the popup, especially in the Requests 
 * SSL/TLS version
 * HTTP status code
 * HTTP version
+* Load time
 
 Users can hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol and HSTS status.
 
@@ -52,7 +53,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 
 ## Features
 
-* Supports using eight different IP [geolocation](https://en.wikipedia.org/wiki/Internet_geolocation) databases to lookup the server location
+* Supports using nine different IP [geolocation](https://en.wikipedia.org/wiki/Internet_geolocation) databases to lookup the server location
 	* Including both country only and full location (state/providence/region and city) databases
 	* Users can select the database with the most accuracy for their locations of interest
 	* All databases support both [IPv4](https://en.wikipedia.org/wiki/IPv4) and [IPv6](https://en.wikipedia.org/wiki/IPv6) addresses
@@ -112,7 +113,7 @@ Emoji | HTTP status codes | Description
 🟨 | `300` - `399` | Redirection
 🟥 | `400` - `599` | Client/Server error
 
-There is also an [Easter egg](https://en.wikipedia.org/wiki/Easter_egg_(media)) fifth emoji. See [here](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for a full list of the possible HTTP status codes.
+There is also an [Easter egg](https://en.wikipedia.org/wiki/Easter_egg_(media)) fifth emoji. See this link for a full [list of the possible HTTP status codes](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes).
 
 ### ETP Classification
 
@@ -125,7 +126,7 @@ Emoji | Description
 👁️ | Tracking (e.g. Ads, Analytics, etc.)
 👥 | Social tracking (i.e. Facebook, LinkedIn and Twitter)
 
-See the official documentation [here](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived#additional_objects) for the full list of possible classification flags.
+See the [official documentation](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived#additional_objects) for the full list of possible classification flags.
 
 ## Other Extensions
 
@@ -145,6 +146,7 @@ Pull requests welcome! Ideas for contributions:
 * Improve the popup design
 * Add more information to the popup
 * Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML) from the popup
+* Use the [Streams API](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API) to process the IP geolocation databases to reduce memory usage
 * Use the [TextMetrics](https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics) interface to dynamically determine the font size for each emoji when generating the icons (see [bug 1692791](https://bugzilla.mozilla.org/show_bug.cgi?id=1692791#c8))
 * Show the IP address and location for cached requests (see [bug 1395020](https://bugzilla.mozilla.org/show_bug.cgi?id=1395020))
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))

@@ -5,7 +5,6 @@ const CONTENT = "content";
 
 /**
  * Send performance data.
- * Called by the popup.
  *
  * @returns {void}
  */
