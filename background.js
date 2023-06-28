@@ -724,8 +724,9 @@ function createRegEx(tree) {
 
 	for (const char in tree) {
 		if (char) {
-			if (!("" in tree[char] && Object.keys(tree[char]).length === 1)) {
-				const recurse = createRegEx(tree[char]);
+			const atree = tree[char];
+			if (!("" in atree && Object.keys(atree).length === 1)) {
+				const recurse = createRegEx(atree);
 				alternatives.push(recurse + char);
 			} else {
 				characterClass.push(char);
