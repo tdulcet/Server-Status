@@ -64,8 +64,8 @@ function getSecondsAsDigitalClock(sec_num) {
 	// console.log(now);
 	const d = Math.floor(sec_num / 86400);
 	const h = Math.floor(sec_num % 86400 / 3600);
-	const m = Math.floor(sec_num % 86400 % 3600 / 60);
-	const s = sec_num % 86400 % 3600 % 60;
+	const m = Math.floor(sec_num % 3600 / 60);
+	const s = sec_num % 60;
 	let text = "";
 	if (d > 0) {
 		// text += d.toLocaleString() + '\xa0days ';
@@ -443,12 +443,13 @@ function outputtitle(array, str) {
  * @param {string} domain
  * @param {string} blacklist
  * @param {string} [address]
- * @returns {void}
+ * @returns {Promise<void>}
  */
 function checkblacklist(domain, blacklist, address) {
-	browser.dns.resolve(domain).then((record) => {
+	return browser.dns.resolve(domain, ["disable_trr"]).then((record) => {
+		// console.log(record);
 		if (record.addresses.length) {
-			document.getElementById("blacklist").innerText = `⚠️🚫\u00A0${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
+			document.getElementById("blacklist").innerText += `🚫\u00A0${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
 			document.querySelector(".blacklist").classList.remove("hidden");
 		}
 	}).catch(() => { });
@@ -462,13 +463,13 @@ function checkblacklist(domain, blacklist, address) {
  * @param {string[]} [ipv6s]
  * @returns {void}
  */
-function checkblacklists(hostname, ipv4s, ipv6s) {
+async function checkblacklists(hostname, ipv4s, ipv6s) {
 	const ipv4 = IPv4RE.test(hostname);
 	const ipv6 = aIPv6RE.test(hostname);
 	// Check Domain Blacklists
 	if (!ipv4 && !ipv6) {
 		for (const bl of DOMAINBLACKLISTS) {
-			checkblacklist(`${hostname}.${bl}`, bl);
+			await checkblacklist(`${hostname}.${bl}`, bl);
 		}
 	}
 	// Check IPv4 Blacklists
@@ -483,7 +484,7 @@ function checkblacklists(hostname, ipv4s, ipv6s) {
 			// Reverse IPv4 address
 			const reverse = address.split(".").reverse().join(".");
 			for (const bl of IPv4BLACKLISTS) {
-				checkblacklist(`${reverse}.${bl}`, bl, address);
+				await checkblacklist(`${reverse}.${bl}`, bl, address);
 			}
 		}
 	}
@@ -491,7 +492,7 @@ function checkblacklists(hostname, ipv4s, ipv6s) {
 	if (!ipv4) {
 		let addresses = [];
 		if (ipv6) {
-			addresses = [hostname];
+			addresses = [hostname.slice(1, -1)];
 		} else if (ipv6s) {
 			addresses = ipv6s;
 		}
@@ -499,7 +500,7 @@ function checkblacklists(hostname, ipv4s, ipv6s) {
 			// Expand and reverse IPv6 address
 			const reverse = expand(address).join("").split("").reverse().join(".");
 			for (const bl of IPv6BLACKLISTS) {
-				checkblacklist(`${reverse}.${bl}`, bl, address);
+				await checkblacklist(`${reverse}.${bl}`, bl, address);
 			}
 		}
 	}
@@ -666,7 +667,7 @@ function updateTable(requests) {
 						cell = row.insertCell();
 						cell.title = title;
 						cell.style.color = color;
-						cell.textContent = days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+						cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
 
 						cell = row.insertCell();
 						cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}${obj.secretKeyLength ? `, ${obj.secretKeyLength} bits` : ""}, ${obj.cipherSuite}`));
@@ -681,7 +682,7 @@ function updateTable(requests) {
 								const sec = Number.parseInt(aheader["max-age"], 10);
 								const days = Math.floor(sec / 86400);
 								cell.title = `HSTS: Yes (${outputseconds(sec)})`;
-								cell.textContent = days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+								cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
 							} else {
 								cell.title = `HSTS: ${securityInfo.hsts ? "Yes (Unable to find header)" : "No"}`;
 								cell.textContent = securityInfo.hsts ? emojis[4] : emojis[5];
@@ -813,9 +814,9 @@ function updatePopup(tabId, tab) {
 		running = true;
 
 		if (details.statusLine && (!details.ip || url.hostname !== details.ip) && !ipv4 && !ipv6) {
+			const ipv4 = details.ip && IPv4RE.test(details.ip);
+			const ipv6 = details.ip && IPv6RE.test(details.ip);
 			if (details.ip) {
-				const ipv4 = IPv4RE.test(details.ip);
-				const ipv6 = IPv6RE.test(details.ip);
 				if (ipv4) {
 					document.getElementById("ipv4").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv4").classList.remove("hidden");
@@ -842,6 +843,7 @@ function updatePopup(tabId, tab) {
 					// console.log(record);
 					const ipv4s = record.addresses.filter((value) => IPv4RE.test(value));
 					const ipv6s = record.addresses.filter((value) => IPv6RE.test(value));
+					console.assert(ipv4s.length + ipv6s.length == record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
 					if (ipv4s.length) {
 						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, true, false);
@@ -857,11 +859,16 @@ function updatePopup(tabId, tab) {
 						checkblacklists(url.hostname, ipv4s, ipv6s);
 					}
 					// console.log(ipv4, ipv6);
+				}).catch((error) => {
+					// console.error(error);
+					if (BLACKLIST) {
+						checkblacklists(url.hostname, ipv4 && [details.ip], ipv6 && [details.ip]);
+					}
 				});
 			}
 			document.querySelector(".ip").classList.remove("hidden");
 		} else if (DNS && BLACKLIST) {
-			checkblacklists(details.ip);
+			checkblacklists(url.hostname);
 		}
 	}
 

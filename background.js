@@ -311,7 +311,7 @@ async function updateIcon(tabId, tab) {
 					icon = certificateIcons[3];
 					backgroundColor = "red";
 				}
-				text = days === 0 ? `< ${numberFormat.format(1)}` : numberFormat.format(days);
+				text = sec > 0 && days === 0 ? `< ${numberFormat.format(1)}` : numberFormat.format(days);
 			} else if (settings.icon === 3) {
 				const version = securityInfo.protocolVersion;
 				if (version.startsWith("TLSv")) {
@@ -384,7 +384,7 @@ async function updateIcon(tabId, tab) {
 		}
 		case 5: {
 			// Get HTTP version
-			const re = /^HTTP\/(\S+) ((\d{3})(?: .+)?)$/u;
+			const re = /^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: .*)?$/u;
 			const regexResult = re.exec(details.statusLine);
 			console.assert(regexResult, "Error: Unknown HTTP Status", details.statusLine);
 			if (regexResult) {
