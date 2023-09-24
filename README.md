@@ -67,7 +67,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 * The IP databases and PSL are automatically downloaded and updated directly, without needing to update the entire extension
 	* This allows users to enjoy much faster and more frequent updates and thus more accurate information
 * Use a keyboard shortcut to quickly open the popup (by default <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd>)
-* Shows failed and blocked requests/connections in the Requests table
+* Shows the active and failed/blocked connections in the Requests table
 * Shows certificate start/end dates and a countdown
 * Button to view the full certificate chain in Firefox's `about:certificate` [certificate viewer](https://github.com/april/certainly-something)
 * Supports showing whether the hostname or IP addresses are blacklisted
