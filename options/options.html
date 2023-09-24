@@ -364,9 +364,51 @@
 		</section>
 
 		<section>
-			<h1>Connections</h1>
+			<h1>Requests</h1>
 
 			<ul>
+				<li>
+					<fieldset>
+						<legend>What columns to show in the Requests table</legend>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="classification" data-optiongroup="settings" name="classification">
+							<label for="classification">Classification by Firefox's Enhanced Tracking Protection (ETP)
+								feature</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="security" data-optiongroup="settings" name="security">
+							<label for="security">Security state</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="expiration" data-optiongroup="settings" name="expiration">
+							<label for="expiration">Days left until certificate expiration</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="tlsversion" data-optiongroup="settings" name="tlsversion">
+							<label for="tlsversion">SSL/TLS version</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="hsts" data-optiongroup="settings" name="hsts">
+							<label for="hsts">HSTS max age in days</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="httpversion" data-optiongroup="settings" name="httpversion">
+							<label for="httpversion">HTTP version</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="httpstatus" data-optiongroup="settings" name="httpstatus">
+							<label for="httpstatus">HTTP status code(s)</label>
+						</div>
+					</fieldset>
+				</li>
+
 				<li>
 					<div class="line">
 						<input class="setting save-on-change" type="checkbox" id="open" data-optiongroup="settings" name="open">
@@ -375,6 +417,24 @@
 					<span class="line indent helper-text">Always show the Requests table when the popup is opened</span>
 				</li>
 
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="blocked" data-optiongroup="settings" name="blocked">
+						<label for="blocked">Show failed and blocked requests/connections in the Requests table</label>
+					</div>
+					<span class="line indent helper-text">Show failed connections and those blocked by your browser
+						(such as with Firefox's <a
+							href="https://support.mozilla.org/kb/enhanced-tracking-protection-firefox-desktop"
+							target="_blank">Enhanced Tracking Protection</a>), other add-ons or your
+						administrator/network.</span>
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h1>Connections</h1>
+
+			<ul>
 				<li>
 					<div class="line">
 						<input class="setting save-on-change" type="checkbox" id="dns" data-optiongroup="settings" name="dns">
@@ -407,18 +467,6 @@
 							href="https://datatracker.ietf.org/doc/html/rfc1924" target="_blank">RFC 1924</a>Base 85
 						compact representation for IPv6 addresses. For example, show
 						<code>9R}vSQ9RqiCvG6zn?Zyh</code>instead of <code>2001:db8::ff00:42:8329</code>.</span>
-				</li>
-
-				<li>
-					<div class="line">
-						<input class="setting save-on-change" type="checkbox" id="blocked" data-optiongroup="settings" name="blocked">
-						<label for="blocked">Show failed and blocked requests/connections in the Requests table</label>
-					</div>
-					<span class="line indent helper-text">Show failed connections and those blocked by your browser
-						(such as with Firefox's <a
-							href="https://support.mozilla.org/kb/enhanced-tracking-protection-firefox-desktop"
-							target="_blank">Enhanced Tracking Protection</a>), other add-ons or your
-						administrator/network.</span>
 				</li>
 
 				<li>
@@ -465,7 +513,9 @@
 							href="https://en.wikipedia.org/wiki/Domain_Name_System-based_blocklist" target="_blank">DNS
 							blacklist</a>(DNSBL). Click this link for a <a
 							href="https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists" target="_blank">comparison
-							of DNSBLs</a>. Requires “Show all IP addresses” above.</span>
+							of DNSBLs</a>. Requires “Show all IP addresses” above. Enabling this option will share the
+						hostname and IP addresses with the respective blacklists provided below when opening the
+						popup.</span>
 					<ul>
 						<li>
 							<div class="line">

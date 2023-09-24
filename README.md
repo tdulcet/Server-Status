@@ -25,12 +25,13 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 	* Days left until certificate expiration
 	* SSL/TLS version
 	* HSTS max age in days
+	* HTTP version
 	* Icon representing the HTTP status code(s)
 	* Hostname/Domain
 	* IP address(es)
 	* Flag for country of server location(s)
 
-Users can hover over almost everything in the popup, especially in the Requests table, to see tooltips with much more information. Toolbar icon can show:
+All of this information is determined offline and locally in the browser. Users can hover over almost everything in the popup, especially in the Requests table, to see tooltips with much more information. The toolbar icon is configurable and can show:
 
 * Flag for country of server location (default)
 	* Badge: Country code
@@ -70,7 +71,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 * Shows certificate start/end dates and a countdown
 * Button to view the full certificate chain in Firefox's `about:certificate` [certificate viewer](https://github.com/april/certainly-something)
 * Supports showing whether the hostname or IP addresses are blacklisted
-* Respects your privacy and does not send data anywhere, all information is determined locally in your browser
+* Respects your privacy and does not send data anywhere by default, all information is determined locally in your browser
 * Supports the light/dark mode of your system automatically
 * Settings automatically synced between all browser instances and devices
 * Uses Unicode [Emojis](https://unicode.org/emoji/charts/full-emoji-list.html) for all icons

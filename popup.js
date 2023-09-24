@@ -1,6 +1,6 @@
 "use strict";
 
-const TAB_ID_NONE = browser.tabs.TAB_ID_NONE;
+const { TAB_ID_NONE } = browser.tabs;
 
 const formatter2 = new Intl.ListFormat([], { style: "short" });
 
@@ -19,6 +19,16 @@ let LOOKUP = 0;
 let DNS = true;
 let BLACKLIST = false;
 let SEND = true;
+
+let COLUMNS = {
+	classification: true,
+	security: true,
+	expiration: true,
+	tlsversion: true,
+	hsts: true,
+	httpversion: true,
+	httpstatus: true
+};
 
 let DOMAINBLACKLISTS = [];
 let IPv4BLACKLISTS = [];
@@ -293,13 +303,13 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 		const labels = hostname.split(".");
 		const alabels = aregexResult ? aregexResult[1].split(".").slice(1) : regexResult ? regexResult[1].split(".") : labels.slice(-1);
 		if (labels.length > alabels.length) {
-			const domain = labels.slice(-(alabels.length + 1)).join(".");
-			const subdomain = labels.slice(0, -(alabels.length + 1)).join(".");
+			const domain = labels.slice(-(alabels.length + 1)).join("\u200B.");
+			const subdomain = labels.slice(0, -(alabels.length + 1)).join("\u200B.");
 			const a = createlink(`${protocol}//${hostname}`);
 			const strong = document.createElement("strong");
 			strong.textContent = domain;
 			if (subdomain) {
-				a.textContent = `${subdomain}.`;
+				a.textContent = `${subdomain}\u200B.`;
 			}
 			a.append(strong);
 			return a;
@@ -381,27 +391,34 @@ function getClassification(details) {
  *
  * @param {Object} tab
  * @param {Object} tab.securityInfo
- * @param {string} tab.error
- * @returns {{emoji: string, state: string}}
+ * @param {string} [tab.error]
+ * @returns {{emoji: string[], state: string}}
  */
 function getstate({ securityInfo, error }) {
-	let emoji = "";
+	const emoji = [];
 	let state = "";
+	if (securityInfo) {
+		if (securityInfo.state === "insecure") {
+			emoji.push(certificateEmojis[0]);
+			state = "Insecure";
+		} else if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
+			emoji.push(certificateEmojis[3]);
+			state = getmessage(securityInfo);
+		} else if (securityInfo.state === "weak") {
+			emoji.push(certificateEmojis[1], certificateEmojis[2]);
+			state = `Weak${securityInfo.weaknessReasons ? ` (${securityInfo.weaknessReasons})` : ""}`;
+		} else if (securityInfo.state === "secure") {
+			emoji.push(certificateEmojis[1]);
+			state = "Secure";
+		}
+	}
 	if (error) {
-		emoji = certificateEmojis[4];
-		state = `Error: ${error}`;
-	} else if (securityInfo.state === "insecure") {
-		emoji = certificateEmojis[0];
-		state = "Insecure";
-	} else if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
-		emoji = certificateEmojis[3];
-		state = getmessage(securityInfo);
-	} else if (securityInfo.state === "weak") {
-		emoji = certificateEmojis[1] + certificateEmojis[2];
-		state = `Weak${securityInfo.weaknessReasons ? ` (${securityInfo.weaknessReasons})` : ""}`;
-	} else if (securityInfo.state === "secure") {
-		emoji = certificateEmojis[1];
-		state = "Secure";
+		emoji.push(certificateEmojis[4]);
+		if (state) {
+			state += `, error: ${error}`;
+		} else {
+			state = `Error: ${error}`;
+		}
 	}
 	return { emoji, state };
 }
@@ -616,103 +633,155 @@ function updateTable(requests) {
 
 		for (const [hostname, request] of requests) {
 			const arequests = Array.from(request.values());
-			const arequest = arequests.filter((x) => x.details.statusLine);
+			let connections = 0;
+			let completed = 0;
+			let redirected = 0;
+			let blocked = 0;
+			let errored = 0;
+			for (const arequest of arequests) {
+				if (arequest.error) {
+					++errored;
+				} else if (arequest.blocked) {
+					++blocked;
+				} else if (arequest.redirected) {
+					++redirected;
+				} else if (arequest.completed) {
+					++completed;
+				} else {
+					++connections;
+				}
+			}
 
-			if (arequest.length || BLOCKED) {
+			if (connections || completed || redirected || BLOCKED) {
 				const row = table.insertRow();
 
-				let cell = row.insertCell();
-				const connections = arequest.length;
-				const blocked = request.size - connections;
-				cell.title = `${numberFormat.format(connections)} connection${connections === 1 ? "" : "s"}${BLOCKED ? `\n${numberFormat.format(blocked)} connection${blocked === 1 ? "" : "s"} blocked` : ""}`;
-				cell.textContent = `${numberFormat.format(connections)}${BLOCKED ? `/${numberFormat.format(blocked)}` : ""}`;
+				const cell = row.insertCell();
+				cell.title = `${numberFormat.format(completed)} connection${completed === 1 ? "" : "s"} completed${redirected ? `\n${numberFormat.format(redirected)} connection${redirected === 1 ? "" : "s"} redirected to a different domain` : ""}${BLOCKED ? `${blocked ? `\n${numberFormat.format(blocked)} connection${blocked === 1 ? "" : "s"} blocked by browser/another add-on` : ""}${!blocked || errored ? `\n${numberFormat.format(errored)} connection${errored === 1 ? "" : "s"} blocked/errored` : ""}` : ""}\n${numberFormat.format(connections)} active connection${connections === 1 ? "" : "s"}`;
+				cell.textContent = `${numberFormat.format(completed + redirected)}${BLOCKED ? `/${numberFormat.format(blocked + errored)}` : ""}/${numberFormat.format(connections)}`;
+				if (connections) {
+					cell.classList.add("highlight");
+				}
 
-				cell = row.insertCell();
-				const classification = arequests.map((obj) => getClassification(obj.details));
-				const classifications = classification.flatMap((obj) => obj.classifications).map((c) => c.split("_").map(([h, ...t]) => h.toUpperCase() + t.join("")).join(" "));
-				const aemojis = classification.flatMap((obj) => obj.emojis);
-				cell.title = classifications.length ? outputtitle(classifications) : "No known trackers";
-				cell.textContent = aemojis.length ? Array.from(new Set(aemojis)).join("") : "–";
+				if (COLUMNS.classification) {
+					const cell = row.insertCell();
+					const classification = arequests.map((obj) => getClassification(obj.details));
+					const classifications = classification.flatMap((obj) => obj.classifications).map((c) => c.split("_").map(([h, ...t]) => h.toUpperCase() + t.join("")).join(" "));
+					const aemojis = classification.flatMap((obj) => obj.emojis);
+					cell.title = classifications.length ? outputtitle(classifications) : "No known trackers";
+					cell.textContent = aemojis.length ? Array.from(new Set(aemojis)).join("") : "–";
+				}
 
-				// const { emoji, state } = getstate(securityInfo);
-				const states = arequests.filter((x) => x.details.statusLine || x.error).map((obj) => getstate(obj));
-				cell = row.insertCell();
-				cell.title = states.length ? outputtitle(states.map((obj) => obj.state)/* , state */) : "Blocked";
-				cell.textContent = states.length ? Array.from(new Set(states.map((obj) => obj.emoji))).join("") : certificateEmojis[5];
+				if (COLUMNS.security) {
+					// const { emoji, state } = getstate(securityInfo);
+					const states = arequests.filter((x) => x.details.statusLine || x.error).map((obj) => getstate(obj));
+					const cell = row.insertCell();
+					cell.title = states.length ? outputtitle(states.map((obj) => obj.state)/* , state */) : blocked ? "Blocked by the browser or another add-on" : "Waiting for connection…";
+					cell.textContent = states.length ? Array.from(new Set(states.flatMap((obj) => obj.emoji))).join("") : blocked ? certificateEmojis[5] : emojis[6];
+				}
+
+				const arequest = arequests.filter((x) => x.details.statusLine);
 
 				if (arequest.length) {
 					const { details, securityInfo } = arequest.at(-1);
 
 					if (securityInfo.state !== "insecure" && securityInfo.certificates.length) {
-						const { details } = arequest[0];
-						const [certificate] = securityInfo.certificates;
-						const start = certificate.validity.start;
-						const end = certificate.validity.end;
-						const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
-						const days = Math.floor(sec / 86400);
-						let title = "";
-						let color = "";
-						if (sec > 0) {
-							// title += 'expires in ' + days.toLocaleString() + ' days';
-							title += `Expires ${rtf.format(days, "day")} (${outputdateRange(start, end)})`;
-							if (days > WARNDAYS) {
-								color = "green";
+						const [{ details }] = arequest;
+						if (COLUMNS.expiration) {
+							const [certificate] = securityInfo.certificates;
+							const { start, end } = certificate.validity;
+							const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
+							const days = Math.floor(sec / 86400);
+							let title = "";
+							let color = "";
+							if (sec > 0) {
+								// title += 'expires in ' + days.toLocaleString() + ' days';
+								title += `Expires ${rtf.format(days, "day")} (${outputdateRange(start, end)})`;
+								if (days > WARNDAYS) {
+									color = "green";
+								} else {
+									color = "gold"; // "yellow"
+								}
 							} else {
-								color = "gold"; // "yellow"
+								title += `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
+								color = "red";
 							}
-						} else {
-							title += `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
-							color = "red";
+							const cell = row.insertCell();
+							cell.title = title;
+							cell.style.color = color;
+							cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
 						}
-						cell = row.insertCell();
-						cell.title = title;
-						cell.style.color = color;
-						cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
 
-						cell = row.insertCell();
-						cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}${obj.secretKeyLength ? `, ${obj.secretKeyLength} bits` : ""}, ${obj.cipherSuite}`));
-						cell.textContent = Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion).map((str) => str?.startsWith("TLS") ? str.slice("TLS".length) : str))).join("\n");
+						if (COLUMNS.tlsversion) {
+							const cell = row.insertCell();
+							cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}${obj.secretKeyLength ? `, ${obj.secretKeyLength} bits` : ""}, ${obj.cipherSuite}`));
+							cell.textContent = Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion).map((str) => str?.startsWith("TLS") ? str.slice("TLS".length) : str))).join("\n");
+						}
 
-						cell = row.insertCell();
-						if (details.responseHeaders) {
-							const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
-							// const header = arequest.find((obj) => obj.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security"))?.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
-							if (header) {
-								const aheader = getHSTS(header.value);
-								const sec = Number.parseInt(aheader["max-age"], 10);
-								const days = Math.floor(sec / 86400);
-								cell.title = `HSTS: Yes (${outputseconds(sec)})`;
-								cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+						if (COLUMNS.hsts) {
+							const cell = row.insertCell();
+							if (details.responseHeaders) {
+								const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
+								// const header = arequest.find((obj) => obj.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security"))?.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
+								if (header) {
+									const aheader = getHSTS(header.value);
+									const sec = Number.parseInt(aheader["max-age"], 10);
+									const days = Math.floor(sec / 86400);
+									cell.title = `HSTS: Yes (${outputseconds(sec)})`;
+									cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+								} else {
+									cell.title = `HSTS: ${securityInfo.hsts ? "Yes (Unable to find header)" : "No"}`;
+									cell.textContent = securityInfo.hsts ? emojis[4] : emojis[5];
+								}
 							} else {
-								cell.title = `HSTS: ${securityInfo.hsts ? "Yes (Unable to find header)" : "No"}`;
+								cell.title = `HSTS: ${securityInfo.hsts ? "Yes" : "No"}`;
 								cell.textContent = securityInfo.hsts ? emojis[4] : emojis[5];
 							}
-						} else {
-							cell.title = `HSTS: ${securityInfo.hsts ? "Yes" : "No"}`;
-							cell.textContent = securityInfo.hsts ? emojis[4] : emojis[5];
 						}
 					} else {
-						cell = row.insertCell();
-						cell.textContent = "–";
-						cell = row.insertCell();
-						cell.textContent = "–";
-						cell = row.insertCell();
-						cell.textContent = "–";
+						if (COLUMNS.expiration) {
+							const cell = row.insertCell();
+							cell.textContent = "–";
+						}
+						if (COLUMNS.tlsversion) {
+							const cell = row.insertCell();
+							cell.textContent = "–";
+						}
+						if (COLUMNS.hsts) {
+							const cell = row.insertCell();
+							cell.textContent = "–";
+						}
 					}
 
-					cell = row.insertCell();
-					cell.title = outputtitle(arequest.map((obj) => obj.details.statusLine), details.statusLine);
-					cell.textContent = Array.from(new Set(arequest.map((obj) => obj.details.statusCode)), (key) => status(key)).join("");
+					const title = outputtitle(arequest.map((obj) => obj.details.statusLine), details.statusLine);
 
-					cell = row.insertCell();
+					if (COLUMNS.httpversion) {
+						const cell = row.insertCell();
+						cell.title = title;
+						// Get HTTP version
+						const re = /^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: .*)?$/u;
+						cell.textContent = Array.from(new Set(arequest.map((obj) => {
+							const regexResult = re.exec(obj.details.statusLine);
+							console.assert(regexResult, "Error: Unknown HTTP Status", obj.details.statusLine);
+							return regexResult ? regexResult[1] : emojis[2];
+						}))).join("\n");
+					}
+
+					if (COLUMNS.httpstatus) {
+						const cell = row.insertCell();
+						cell.title = title;
+						cell.textContent = Array.from(new Set(arequest.map((obj) => obj.details.statusCode)), (key) => status(key)).join("");
+					}
+
+					let cell = row.insertCell();
 					cell.append(outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
+					cell.classList.add("host");
 
 					const addresses = Array.from(new Set(arequest.map((obj) => obj.details.ip).filter(Boolean)));
 					cell = row.insertCell();
 					if (addresses.length) {
 						cell.append(...addresses.flatMap((x, i) => [...i ? ["\n"] : [], ...outputaddress(x, hostname, details.ip)]));
 					} else if (details.fromCache) {
-						const { details } = arequest[0];
+						const [{ details }] = arequest;
 						if (details.responseHeaders) {
 							const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "date");
 							if (header) {
@@ -745,17 +814,30 @@ function updateTable(requests) {
 						}
 					}
 				} else if (BLOCKED) {
-					cell = row.insertCell();
-					cell.textContent = "–";
-					cell = row.insertCell();
-					cell.textContent = "–";
-					cell = row.insertCell();
-					cell.textContent = "–";
-					cell = row.insertCell();
-					cell.textContent = "–";
+					if (COLUMNS.expiration) {
+						const cell = row.insertCell();
+						cell.textContent = "–";
+					}
+					if (COLUMNS.tlsversion) {
+						const cell = row.insertCell();
+						cell.textContent = "–";
+					}
+					if (COLUMNS.hsts) {
+						const cell = row.insertCell();
+						cell.textContent = "–";
+					}
+					if (COLUMNS.httpversion) {
+						const cell = row.insertCell();
+						cell.textContent = "–";
+					}
+					if (COLUMNS.httpstatus) {
+						const cell = row.insertCell();
+						cell.textContent = "–";
+					}
 
-					cell = row.insertCell();
+					let cell = row.insertCell();
 					cell.append(outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
+					cell.classList.add("host");
 
 					cell = row.insertCell();
 					cell.textContent = "–";
@@ -764,7 +846,7 @@ function updateTable(requests) {
 						cell = row.insertCell();
 					}
 
-					row.style.opacity = "0.5";
+					row.classList.add("blocked");
 				}
 			}
 		}
@@ -785,12 +867,13 @@ function updateTable(requests) {
  * @param {Object} tab.details
  * @param {Object} tab.securityInfo
  * @param {Map} tab.requests
- * @param {string} tab.error
+ * @param {string} [tab.error]
+ * @param {boolean} [tab.blocked]
  * @param {Object} [tab.performance]
  * @returns {void}
  */
 function updatePopup(tabId, tab) {
-	const { details, securityInfo, requests, error } = tab;
+	const { details, securityInfo, requests, error, blocked } = tab;
 	// console.log(tabId, details, securityInfo);
 
 	document.getElementById("content").textContent = "Loading…";
@@ -843,7 +926,7 @@ function updatePopup(tabId, tab) {
 					// console.log(record);
 					const ipv4s = record.addresses.filter((value) => IPv4RE.test(value));
 					const ipv6s = record.addresses.filter((value) => IPv6RE.test(value));
-					console.assert(ipv4s.length + ipv6s.length == record.addresses.length, "Error: Parsing IP addresses", record.addresses);
+					console.assert(ipv4s.length + ipv6s.length === record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
 					if (ipv4s.length) {
 						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, true, false);
@@ -873,7 +956,7 @@ function updatePopup(tabId, tab) {
 	}
 
 	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis[1];
-	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Access denied for this page");
+	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Unavailable for this page");
 	document.getElementById("host").replaceChildren(outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
 	if (details.responseHeaders) {
 		// console.log(details.responseHeaders);
@@ -930,14 +1013,13 @@ function updatePopup(tabId, tab) {
 
 	if (details.statusLine || error) {
 		const { emoji, state } = getstate(tab);
-		document.getElementById("state").textContent = `${emoji}\u00A0${state}`;
+		document.getElementById("state").textContent = `${emoji.join("")}\u00A0${state}`;
 
 		if (details.statusLine && securityInfo.state !== "insecure" && securityInfo.certificates.length) {
 			const [certificate] = securityInfo.certificates;
-			const start = certificate.validity.start;
-			const end = certificate.validity.end;
+			const { start, end } = certificate.validity;
 			const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
-			const issuer = certificate.issuer;
+			const { issuer } = certificate;
 			const aissuer = getissuer(issuer);
 			// console.log(issuer, aissuer);
 			// console.log(end, days, new Date(end));
@@ -1003,7 +1085,7 @@ function updatePopup(tabId, tab) {
 			}
 		}
 	} else {
-		document.getElementById("state").textContent = `${certificateEmojis[5]}\u00A0Blocked`;
+		document.getElementById("state").textContent = blocked ? `${certificateEmojis[5]}\u00A0Blocked by the browser or another add-on` : `${emojis[6]}\u00A0Waiting for the connection to complete…`;
 	}
 
 	document.querySelector(".no-data").classList.add("hidden");
@@ -1030,24 +1112,27 @@ function getstatus(tabId) {
 
 			if (message.tab) {
 				if (message.tab.details) {
-					WARNDAYS = message.WARNDAYS;
-					FULLIPv6 = message.FULLIPv6;
-					COMPACTIPv6 = message.COMPACTIPv6;
-					OPEN = message.OPEN;
-					BLOCKED = message.BLOCKED;
-					HTTPS = message.HTTPS;
-					DNS = message.DNS;
-					BLACKLIST = message.BLACKLIST;
-					DOMAINBLACKLISTS = message.DOMAINBLACKLISTS;
-					IPv4BLACKLISTS = message.IPv4BLACKLISTS;
-					IPv6BLACKLISTS = message.IPv6BLACKLISTS;
-					SUFFIX = message.SUFFIX;
-					suffixes = message.suffixes;
-					exceptions = message.exceptions;
-					GeoDB = message.GeoDB;
-					MAP = message.MAP;
-					LOOKUP = message.LOOKUP;
-					SEND = message.SEND;
+					({
+						WARNDAYS,
+						FULLIPv6,
+						COMPACTIPv6,
+						OPEN,
+						BLOCKED,
+						HTTPS,
+						DNS,
+						BLACKLIST,
+						DOMAINBLACKLISTS,
+						IPv4BLACKLISTS,
+						IPv6BLACKLISTS,
+						SUFFIX,
+						suffixes,
+						exceptions,
+						GeoDB,
+						MAP,
+						LOOKUP,
+						SEND,
+						COLUMNS
+					} = message);
 
 					updatePopup(tabId, message.tab);
 				} else {
@@ -1091,18 +1176,20 @@ browser.runtime.onMessage.addListener((message, sender) => {
 		const { details, tab } = message;
 
 		if (details.tabId === tabId) {
-			WARNDAYS = message.WARNDAYS;
-			FULLIPv6 = message.FULLIPv6;
-			COMPACTIPv6 = message.COMPACTIPv6;
-			OPEN = message.OPEN;
-			BLOCKED = message.BLOCKED;
-			HTTPS = message.HTTPS;
-			DNS = message.DNS;
-			SUFFIX = message.SUFFIX;
-			GeoDB = message.GeoDB;
-			MAP = message.MAP;
-			LOOKUP = message.LOOKUP;
-			SEND = message.SEND;
+			({
+				WARNDAYS,
+				FULLIPv6,
+				COMPACTIPv6,
+				OPEN,
+				BLOCKED,
+				HTTPS,
+				DNS,
+				SUFFIX,
+				GeoDB,
+				MAP,
+				LOOKUP,
+				SEND
+			} = message);
 			// console.log(message);
 
 			if (details.type === "main_frame") {

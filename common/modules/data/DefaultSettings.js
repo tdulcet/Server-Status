@@ -33,7 +33,15 @@ const defaultSettings = {
 		domainblacklist: "dbl.spamhaus.org",
 		ipv4blacklist: "zen.spamhaus.org",
 		ipv6blacklist: "zen.spamhaus.org",
-		send: true
+		send: true,
+		// columns:
+		classification: true,
+		security: true,
+		expiration: true,
+		tlsversion: true,
+		hsts: true,
+		httpversion: true,
+		httpstatus: true
 	}
 };
 

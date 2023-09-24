@@ -9,6 +9,11 @@ th {
 	border: 2px solid;
 }
 
+td.host {
+	max-width: 250px;
+	overflow-wrap: break-word;
+}
+
 .hidden {
 	display: none;
 }
@@ -25,4 +30,12 @@ a.ipv4 {
 
 a.ipv6 {
 	color: teal;
+}
+
+.blocked {
+	opacity: 0.5;
+}
+
+.highlight {
+	color: blue;
 }

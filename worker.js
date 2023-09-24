@@ -349,7 +349,7 @@ function setSettings(message) {
 	settings.GeoDB = asettings.GeoDB;
 
 	if (settings.GeoDB) {
-		const GEOIP = message.GEOIP;
+		const { GEOIP } = message;
 
 		if (GEOIP && GEOIP.GeoDB === settings.GeoDB) {
 			if (GEOIP.GeoIPv4 && GEOIP.GeoIPv6) {

@@ -7,7 +7,7 @@ import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 const TITLE = "Server Status";
 const label = "PSL";
 
-const TAB_ID_NONE = browser.tabs.TAB_ID_NONE;
+const { TAB_ID_NONE } = browser.tabs;
 
 const ALARM1 = "updatePSL";
 const ALARM2 = "updateGeoIP";
@@ -23,10 +23,10 @@ const settings = {
 	icon: null,
 	color: null,
 	warndays: null, // Days
+	open: null,
 	dns: null,
 	fullipv6: null,
 	compactipv6: null,
-	open: null,
 	blocked: null,
 	GeoDB: null,
 	update: null,
@@ -41,6 +41,16 @@ const settings = {
 	ipv4blacklists: null,
 	ipv6blacklists: null,
 	send: null
+};
+
+const columns = {
+	classification: null,
+	security: null,
+	expiration: null,
+	tlsversion: null,
+	hsts: null,
+	httpversion: null,
+	httpstatus: null
 };
 
 const tabs = new Map();
@@ -282,12 +292,11 @@ async function updateIcon(tabId, tab) {
 	}
 	if (securityInfo.state !== "insecure") {
 		if (securityInfo.certificates.length) {
-			const certificate = securityInfo.certificates[0];
-			// const start = certificate.validity.start;
-			const end = certificate.validity.end;
+			const [certificate] = securityInfo.certificates;
+			const { /* start, */ end } = certificate.validity;
 			const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
 			const days = Math.floor(sec / 86400);
-			const issuer = certificate.issuer;
+			const { issuer } = certificate;
 			const aissuer = getissuer(issuer);
 			// console.log(end, days, new Date(end));
 			// Certificate expiration
@@ -364,7 +373,7 @@ async function updateIcon(tabId, tab) {
 
 	switch (settings.icon) {
 		case 4: {
-			const statusCode = details.statusCode;
+			const { statusCode } = details;
 			if (statusCode >= 100 && statusCode < 200) {
 				icon = statusIcons[0];
 				backgroundColor = "blue";
@@ -448,7 +457,7 @@ async function updateActiveTab(details) {
 		// console.log("webNavigation.onCommitted:", details.url, new URL(details.url).origin);
 		if (details.tabId && details.tabId !== TAB_ID_NONE) {
 			const aurl = new URL(details.url);
-			const title = aurl.protocol === "http:" || aurl.protocol === "https:" ? ", try ⟳ refreshing the page" : "";
+			const title = ["http:", "https:"].includes(aurl.protocol) ? ", try ⟳ refreshing the page" : "";
 			if (tabs.has(details.tabId)) {
 				const tab = tabs.get(details.tabId);
 				if (tab.details && tab.details.statusLine) {
@@ -470,11 +479,14 @@ async function updateActiveTab(details) {
 						}
 					}
 				} else if (tab.error) {
-					setIcon(details.tabId, icons[1], `${TITLE}  \nError occurred for this “${aurl.protocol}” page: ${tab.error}`, null, null);
+					setIcon(details.tabId, icons[1], `${TITLE}  \nError occurred for this page: ${tab.error}`, null, null);
 					console.debug("Error occurred", aurl.protocol, aurl.origin, tab.error);
+				} else if (tab.blocked) {
+					setIcon(details.tabId, certificateIcons[5], `${TITLE}  \nThe browser or another add-on has blocked this page`, null, null);
+					console.debug("Blocked", aurl.protocol, aurl.origin);
 				} else {
-					setIcon(details.tabId, tab.details ? icons[0] : icons[1], `${TITLE}  \nUnavailable${tab.details ? "" : " or Access denied"} for this “${aurl.protocol}” page${title}`, null, null);
-					console.debug("Unavailable or Access denied", aurl.protocol, aurl.origin);
+					setIcon(details.tabId, tab.details ? icons[0] : icons[1], `${TITLE}  \n${tab.details ? "Waiting for connection to complete" : "Unavailable or Access denied for this page"}${title}`, null, null);
+					console.debug(tab.details ? "Waiting" : "Unavailable or Access denied", aurl.protocol, aurl.origin);
 				}
 			} else {
 				setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this “${aurl.protocol}” page${title}`, null, null);
@@ -585,12 +597,70 @@ browser.webRequest.onHeadersReceived.addListener(headersReceived,
 );
 
 /**
+ * Save redirect.
+ *
+ * @param {Object} details
+ * @returns {void}
+ */
+function beforeRedirect(details) {
+	if (details.tabId && details.tabId !== TAB_ID_NONE) {
+		const aurl = new URL(details.url);
+		const aredirectUrl = new URL(details.redirectUrl);
+		const blocked = !["http:", "https:"].includes(aredirectUrl.protocol);
+
+		if (!blocked && aurl.hostname === aredirectUrl.hostname) {
+			return;
+		}
+
+		const tab = tabs.get(details.tabId);
+
+		if (!tab) {
+			console.error(details.tabId, aurl.origin);
+			return;
+		}
+
+		if (details.type === "main_frame") {
+			if (!tab.details) {
+				console.error("No Details!", tab);
+			}
+			if (blocked) {
+				tab.blocked = blocked;
+			}
+			// console.log("beforeRedirect", details);
+		}
+
+		const requests = tab.requests.get(aurl.hostname);
+
+		if (!requests || !requests.has(details.requestId)) {
+			console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
+			return;
+		}
+
+		const request = requests.get(details.requestId);
+		if (!request.details) {
+			console.error("No Details!", request);
+		}
+		if (blocked) {
+			request.blocked = blocked;
+		} else {
+			request.redirected = aredirectUrl.hostname;
+		}
+
+		sendSettings(details, tab);
+	}
+}
+
+browser.webRequest.onBeforeRedirect.addListener(beforeRedirect,
+	{ urls: ["<all_urls>"] }
+);
+
+/**
  * Save completed.
  *
  * @param {Object} details
  * @returns {void}
  */
-/* function completed(details) {
+function completed(details) {
 	if (details.tabId && details.tabId !== TAB_ID_NONE) {
 		const aurl = new URL(details.url);
 		const tab = tabs.get(details.tabId);
@@ -601,7 +671,7 @@ browser.webRequest.onHeadersReceived.addListener(headersReceived,
 		}
 
 		if (details.type === "main_frame") {
-			// tab.error = details.error;
+			tab.completed = true;
 			// console.log("completed", details);
 		}
 
@@ -609,17 +679,19 @@ browser.webRequest.onHeadersReceived.addListener(headersReceived,
 
 		if (!requests || !requests.has(details.requestId)) {
 			console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
-			// return;
+			return;
 		}
 
-		// const request = requests.get(details.requestId);
-		// request.error = details.error;
+		const request = requests.get(details.requestId);
+		request.completed = true;
+
+		sendSettings(details, tab);
 	}
 }
 
 browser.webRequest.onCompleted.addListener(completed,
 	{ urls: ["<all_urls>"] }
-); */
+);
 
 /**
  * Save error.
@@ -971,6 +1043,14 @@ function setSettings(asettings) {
 	settings.color = asettings.color;
 	settings.send = asettings.send;
 
+	columns.classification = asettings.classification;
+	columns.security = asettings.security;
+	columns.expiration = asettings.expiration;
+	columns.tlsversion = asettings.tlsversion;
+	columns.hsts = asettings.hsts;
+	columns.httpversion = asettings.httpversion;
+	columns.httpstatus = asettings.httpstatus;
+
 	browser.idle.setDetectionInterval(settings.idle);
 
 	// browser.alarms.clearAll();
@@ -1147,6 +1227,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				MAP: settings.map,
 				LOOKUP: settings.lookup,
 				SEND: settings.send,
+				COLUMNS: columns,
 				tab
 			};
 			// console.log(response);
