@@ -64,7 +64,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "server-status@tealdulcet.com",
-      "strict_min_version": "91.0"
+      "strict_min_version": "114.0"
     }
   }
 }

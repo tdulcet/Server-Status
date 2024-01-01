@@ -1,18 +1,18 @@
 "use strict";
 
 // communication type
-const POPUP = "popup";
-const CONTENT = "content";
-const BACKGROUND = "background";
-const NOTIFICATION = "notification";
-const LOCATION = "location";
-const WORKER = "worker";
+export const POPUP = "popup";
+export const CONTENT = "content";
+export const BACKGROUND = "background";
+export const NOTIFICATION = "notification";
+export const LOCATION = "location";
+export const WORKER = "worker";
 
-const emojis = Object.freeze(["🧩", "ℹ️", "❓", "🌐", "✔️", "✖️", "⏳", "⬇️"]);
-const certificateEmojis = Object.freeze(["🔓", "🔒", "⚠️", "❌", "⛔", "🛡️"]);
-const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", /* "🔵", "🟢", "🟡", "🔴", */ "🫖"]);
+export const emojis = Object.freeze(["🧩", "ℹ️", "❓", "🌐", "✔️", "✖️", "⏳", "⬇️"]);
+export const certificateEmojis = Object.freeze(["🔓", "🔒", "⚠️", "❌", "⛔", "🛡️"]);
+export const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", /* "🔵", "🟢", "🟡", "🔴", */ "🫖"]);
 // const digitEmojis = Object.freeze([...[...new Array(10)].map((x, i) => `${i}️`), ..."⓿❶❷❸❹❺❻❼❽❾", ..."⓪①②③④⑤⑥⑦⑧⑨"]);
-const digitEmojis = Object.freeze([...new Array(10)].map((x, i) => `${i}️⃣`));
+export const digitEmojis = Object.freeze([...new Array(10)].map((x, i) => `${i}️⃣`));
 
 const suffix_power_char = Object.freeze(["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]);
 
@@ -21,32 +21,32 @@ const suffix_power_char = Object.freeze(["", "K", "M", "G", "T", "P", "E", "Z", 
 // RFC 1924: 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~
 const base85 = Object.freeze(Array.from("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"));
 
-const dateTimeFormat1 = new Intl.DateTimeFormat([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
-// const dateTimeFormat2 = new Intl.DateTimeFormat([], { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
-const dateTimeFormat3 = new Intl.DateTimeFormat([], { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
-const dateTimeFormat4 = new Intl.DateTimeFormat([], { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+export const dateTimeFormat1 = new Intl.DateTimeFormat([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+// export const dateTimeFormat2 = new Intl.DateTimeFormat([], { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+export const dateTimeFormat3 = new Intl.DateTimeFormat([], { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+export const dateTimeFormat4 = new Intl.DateTimeFormat([], { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
 
-const numberFormat1 = new Intl.NumberFormat([], { style: "unit", unit: "day", unitDisplay: "long" });
-const numberFormat2 = new Intl.NumberFormat([], { style: "unit", unit: "hour", unitDisplay: "long" });
-const numberFormat3 = new Intl.NumberFormat([], { style: "unit", unit: "minute", unitDisplay: "long" });
-const numberFormat4 = new Intl.NumberFormat([], { style: "unit", unit: "second", unitDisplay: "long" });
-const numberFormat5 = new Intl.NumberFormat([], { style: "unit", unit: "millisecond", unitDisplay: "long" });
-const numberFormat6 = new Intl.NumberFormat([], { style: "unit", unit: "millisecond", unitDisplay: "short" });
+export const numberFormat1 = new Intl.NumberFormat([], { style: "unit", unit: "day", unitDisplay: "long" });
+export const numberFormat2 = new Intl.NumberFormat([], { style: "unit", unit: "hour", unitDisplay: "long" });
+export const numberFormat3 = new Intl.NumberFormat([], { style: "unit", unit: "minute", unitDisplay: "long" });
+export const numberFormat4 = new Intl.NumberFormat([], { style: "unit", unit: "second", unitDisplay: "long" });
+export const numberFormat5 = new Intl.NumberFormat([], { style: "unit", unit: "millisecond", unitDisplay: "long" });
+export const numberFormat6 = new Intl.NumberFormat([], { style: "unit", unit: "millisecond", unitDisplay: "short" });
 
 const formatter1 = new Intl.ListFormat();
 
-const numberFormat = new Intl.NumberFormat();
-const rtf = new Intl.RelativeTimeFormat([], { numeric: "auto" });
-const regionNames = new Intl.DisplayNames([], { type: "region" });
+export const numberFormat = new Intl.NumberFormat();
+export const rtf = new Intl.RelativeTimeFormat([], { numeric: "auto" });
+export const regionNames = new Intl.DisplayNames([], { type: "region" });
 
 // IPv4 address regular expression
 const IPv4 = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])`;
-const IPv4RE = new RegExp(`^${IPv4}$`, "u");
+export const IPv4RE = new RegExp(`^${IPv4}$`, "u");
 
 // IPv6 address regular expression
 // \p{ASCII_Hex_Digit}
-const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
-const IPv6RE = new RegExp(`^${IPv6}$`, "u");
+export const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
+export const IPv6RE = new RegExp(`^${IPv6}$`, "u");
 
 /**
  * Auto-scale number to unit.
@@ -56,7 +56,7 @@ const IPv6RE = new RegExp(`^${IPv6}$`, "u");
  * @param {boolean} scale
  * @returns {string}
  */
-function outputunit(number, scale) {
+export function outputunit(number, scale) {
 	let str = "";
 
 	const scale_base = scale ? 1000 : 1024;
@@ -98,7 +98,7 @@ function outputunit(number, scale) {
  * @param {bigint} number
  * @returns {string}
  */
-function outputbase85(number) {
+export function outputbase85(number) {
 	const base = 85n;
 	let str = "";
 
@@ -117,7 +117,7 @@ function outputbase85(number) {
  * @param {string} address
  * @returns {string[]}
  */
-function expand(address) {
+export function expand(address) {
 	const blocks = address.split(":");
 	for (const [i, block] of blocks.entries()) {
 		if (block.length === 0) {
@@ -135,7 +135,7 @@ function expand(address) {
  * @param {string} address
  * @returns {number}
  */
-function IPv4toInt(address) {
+export function IPv4toInt(address) {
 	const octets = address.split(".").map((x) => Number.parseInt(x, 10));
 	return (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3] >>> 0;
 }
@@ -146,7 +146,7 @@ function IPv4toInt(address) {
  * @param {string} address
  * @returns {bigint}
  */
-function IPv6toInt(address) {
+export function IPv6toInt(address) {
 	return BigInt(`0x${address}`);
 }
 
@@ -156,7 +156,7 @@ function IPv6toInt(address) {
  * @param {number} sec_num
  * @returns {string}
  */
-function outputseconds(sec_num) {
+export function outputseconds(sec_num) {
 	// console.log(sec_num);
 	const d = Math.floor(sec_num / 86400);
 	const h = Math.floor(sec_num % 86400 / 3600);
@@ -185,7 +185,7 @@ function outputseconds(sec_num) {
  * @param {number|string} date
  * @returns {string}
  */
-function outputdate(date) {
+export function outputdate(date) {
 	return dateTimeFormat1.format(new Date(date));
 }
 
@@ -196,7 +196,7 @@ function outputdate(date) {
  * @param {number} date2
  * @returns {string}
  */
-function outputdateRange(date1, date2) {
+export function outputdateRange(date1, date2) {
 	return dateTimeFormat4.formatRange(new Date(date1), new Date(date2));
 }
 
@@ -206,7 +206,7 @@ function outputdateRange(date1, date2) {
  * @param {{country: string, state2?: string, state1?: string, city?: string}} info
  * @returns {string}
  */
-function outputlocation(info) {
+export function outputlocation(info) {
 	return `${info.city ? `${info.city}, ` : ""}${info.state2 ? `${info.state2}, ` : ""}${info.state1 ? `${info.state1}, ` : ""}${regionNames.of(info.country)}`;
 }
 
@@ -216,7 +216,7 @@ function outputlocation(info) {
  * @param {number} longitude
  * @returns {string}
  */
-function earth(longitude) {
+export function earth(longitude) {
 	let text = "";
 	if (longitude < -30) {
 		text = "🌎";
@@ -234,7 +234,7 @@ function earth(longitude) {
  * @param {string} issuer
  * @returns {Object.<string, string|void>}
  */
-function getissuer(issuer) {
+export function getissuer(issuer) {
 	// console.log(issuer);
 	const aissuer = {};
 	for (const item of issuer.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/u).filter((x, i) => i % 2 !== 0)) {
@@ -250,7 +250,7 @@ function getissuer(issuer) {
  * @param {string} header
  * @returns {Object.<string, string|void>}
  */
-function getHSTS(header) {
+export function getHSTS(header) {
 	// console.log(header);
 	const aheader = {};
 	for (const item of header.split(/([\w-]+(?:=(?:"[^"]+"|[^";\s]*))?)(?:\s*;\s*|$)/u).filter((x, i) => i % 2 !== 0)) {
@@ -266,7 +266,7 @@ function getHSTS(header) {
  * @param {Object} securityInfo
  * @returns {string}
  */
-function getmessage(securityInfo) {
+export function getmessage(securityInfo) {
 	let message = "";
 	if (securityInfo.state === "broken") {
 		message = securityInfo.errorMessage;
@@ -286,7 +286,7 @@ function getmessage(securityInfo) {
  * @param {string} country
  * @returns {string}
  */
-function countryCode(country) {
+export function countryCode(country) {
 	return Array.from(country.toUpperCase(), (c) => String.fromCodePoint(c.codePointAt() + 127397)).join("");
 }
 
@@ -296,7 +296,7 @@ function countryCode(country) {
  * @param {number} delay
  * @returns {Promise<void>}
  */
-function delay(delay) {
+export function delay(delay) {
 	return new Promise((resolve) => {
 		setTimeout(resolve, delay);
 	});

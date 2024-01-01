@@ -6,8 +6,8 @@
 	<meta charset="utf-8">
 	<link rel="stylesheet" href="popup.css" />
 	<title>🎛️ Server Status</title>
-	<script defer src="common.js"></script>
-	<script defer src="popup.js"></script>
+	<!-- <script defer src="common.js"></script> -->
+	<script defer src="popup.js" type="module"></script>
 </head>
 
 <body>
@@ -60,8 +60,11 @@
 			</tr>
 			<tr class="content hidden">
 				<td><span title="Load time">⏱️&nbsp;Load time</span>: <span id="load"></span>, <abbr
-						title="Time to first byte">TTFB</abbr>: <span id="ttfb"></span><br><span
-						title="First paint">🖌️&nbsp;First paint</span>: <span id="paint"></span></td>
+						title="Time to first byte">TTFB</abbr>: <span id="ttfb"></span><br>
+					<span title="First paint">🖌️&nbsp;First paint</span>: <span id="paint"></span><span
+						class="lcp hidden">, <abbr title="Largest Contentful Paint">LCP</abbr>: <span
+							id="lcp"></span></span>
+				</td>
 			</tr>
 			<tr class="content hidden">
 				<td><span title="Transfer size">⬇️</span>&nbsp;<span id="size"></span></td>

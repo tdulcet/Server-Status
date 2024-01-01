@@ -1,5 +1,7 @@
 "use strict";
 
+import { POPUP, CONTENT, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4RE, IPv6RE, outputbase85, expand, IPv6toInt, outputseconds, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode, delay } from "/common.js";
+
 import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 
 // import * as common from "common.js";
@@ -397,7 +399,7 @@ async function updateIcon(tabId, tab) {
 			const regexResult = re.exec(details.statusLine);
 			console.assert(regexResult, "Error: Unknown HTTP Status", details.statusLine);
 			if (regexResult) {
-				const version = regexResult[1];
+				const [, version] = regexResult;
 				const [major, minor] = version.split(".").map((x) => Number.parseInt(x, 10));
 				icon = major < digitIcons.length ? digitIcons[major] : icons[2];
 				switch (major) {
@@ -438,6 +440,23 @@ async function updateIcon(tabId, tab) {
 					backgroundColor = "red";
 				}
 				text = numberFormat.format(load);
+			}
+			break;
+		}
+		case 8: {
+			if (tab.performance?.lcp) {
+				const lcp = tab.performance.lcp.at(-1);
+				if (lcp.startTime <= 2500) {
+					icon = statusIcons[1];
+					backgroundColor = "green";
+				} else if (lcp.startTime <= 4000) {
+					icon = statusIcons[2];
+					backgroundColor = "yellow";
+				} else {
+					icon = statusIcons[3];
+					backgroundColor = "red";
+				}
+				text = numberFormat.format(lcp.startTime);
 			}
 			break;
 		}
@@ -1095,7 +1114,7 @@ function setSettings(asettings) {
 			setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
 
 			if (!worker) {
-				worker = new Worker("worker.js");
+				worker = new Worker("worker.js", { type: "module" });
 
 				worker.addEventListener("message", (event) => {
 					const message = event.data;
@@ -1259,7 +1278,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			const tab = tabs.get(sender.tab.id);
 			if (tab) {
 				tab.performance = message.performance;
-				if (settings.icon === 7) {
+				if (settings.icon === 7 || settings.icon === 8) {
 					updateIcon(sender.tab.id, tab);
 				}
 			}

@@ -1,5 +1,7 @@
 "use strict";
 
+import { POPUP, CONTENT, LOCATION, emojis, certificateEmojis, statusEmojis, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat1, numberFormat2, numberFormat3, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4RE, IPv6, IPv6RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode } from "/common.js";
+
 const { TAB_ID_NONE } = browser.tabs;
 
 const formatter2 = new Intl.ListFormat([], { style: "short" });
@@ -110,11 +112,7 @@ function outputtimer(time, now) {
 	let color = "";
 	if (sec_num > 0) {
 		text = getSecondsAsDigitalClock(sec_num);
-		if (days > WARNDAYS) {
-			color = "green";
-		} else {
-			color = "gold"; // "yellow"
-		}
+		color = days > WARNDAYS ? "green" : "gold"; // "yellow"
 	} else {
 		text = "Expired";
 		color = "red";
@@ -598,18 +596,28 @@ function click(event) {
 function updatePerformance(performance) {
 	const [navigation] = performance.navigation;
 	const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
-	const load = document.getElementById("load");
-	load.title = outputtime(navigation.loadEventStart - start);
-	load.textContent = numberFormat6.format(navigation.loadEventStart - start);
+	const load = navigation.loadEventStart - start;
+	const aload = document.getElementById("load");
+	aload.title = outputtime(load);
+	aload.textContent = numberFormat6.format(load);
 
-	const ttfb = document.getElementById("ttfb");
-	ttfb.title = outputtime(navigation.responseStart - start);
-	ttfb.textContent = numberFormat6.format(navigation.responseStart - start);
+	const ttfb = navigation.responseStart - start;
+	const attfb = document.getElementById("ttfb");
+	attfb.title = outputtime(ttfb);
+	attfb.textContent = numberFormat6.format(ttfb);
 
-	const fcp = performance.paint.find((x) => x.name === "first-contentful-paint");
-	const paint = document.getElementById("paint");
-	paint.title = fcp ? outputtime(fcp.startTime) : "";
-	paint.textContent = fcp ? numberFormat6.format(fcp.startTime) : "None";
+	const fcp = performance.paint?.find((x) => x.name === "first-contentful-paint");
+	const apaint = document.getElementById("paint");
+	apaint.title = fcp ? outputtime(fcp.startTime) : "";
+	apaint.textContent = fcp ? numberFormat6.format(fcp.startTime) : "None";
+
+	if (PerformanceObserver.supportedEntryTypes.includes("largest-contentful-paint")) {
+		const lcp = performance.lcp?.at(-1);
+		const alcp = document.getElementById("lcp");
+		alcp.title = lcp ? outputtime(lcp.startTime) : "";
+		alcp.textContent = lcp ? numberFormat6.format(lcp.startTime) : "None";
+		document.querySelector(".lcp").classList.remove("hidden");
+	}
 
 	const size = navigation.transferSize;
 	document.getElementById("size").textContent = size === 0 && navigation.decodedBodySize > 0 ? "Cached" : `${outputunit(size, false)}B${size >= 1000 ? ` (${outputunit(size, true)}B)` : ""}`;
@@ -696,11 +704,7 @@ function updateTable(requests) {
 							if (sec > 0) {
 								// title += 'expires in ' + days.toLocaleString() + ' days';
 								title += `Expires ${rtf.format(days, "day")} (${outputdateRange(start, end)})`;
-								if (days > WARNDAYS) {
-									color = "green";
-								} else {
-									color = "gold"; // "yellow"
-								}
+								color = days > WARNDAYS ? "green" : "gold"; // "yellow"
 							} else {
 								title += `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
 								color = "red";

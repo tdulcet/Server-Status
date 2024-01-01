@@ -1,7 +1,8 @@
 "use strict";
 
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1247687
-importScripts("common.js");
+// importScripts("common.js");
+import { BACKGROUND, NOTIFICATION, LOCATION, WORKER, dateTimeFormat4, numberFormat, IPv4RE, IPv6RE, outputunit, expand, IPv4toInt, IPv6toInt, outputseconds, delay } from "/common.js";
 
 const label = "GeoIPv";
 
@@ -216,7 +217,7 @@ async function getGeoLoc(date, languages, cache) {
 		const time = outputseconds(Math.floor((end - start) / 1000));
 
 		if (!cache) {
-			notification("⬇️ Geolocation databases updated", `The IP geolocation databases were successfully updated in ${time}.\n\nIPv4 ${modified4 ? `updated: ${outputdate(modified4)}, ` : ""}rows: ${numberFormat.format(GeoIPv4.length)}${length4 ? `, size: ${outputunit(length4, false)}B` : ""}\nIPv6 ${modified6 ? `updated: ${outputdate(modified6)}, ` : ""}rows: ${numberFormat.format(GeoIPv6.length)}${length6 ? `, size: ${outputunit(length6, false)}B` : ""}`);
+			notification("⬇️ Geolocation databases updated", `The IP geolocation databases were successfully updated in ${time}.\n\nIPv4 ${modified4 ? `updated: ${dateTimeFormat4.format(new Date(modified4))}, ` : ""}rows: ${numberFormat.format(GeoIPv4.length)}${length4 ? `, size: ${outputunit(length4, false)}B` : ""}\nIPv6 ${modified6 ? `updated: ${dateTimeFormat4.format(new Date(modified6))}, ` : ""}rows: ${numberFormat.format(GeoIPv6.length)}${length6 ? `, size: ${outputunit(length6, false)}B` : ""}`);
 		}
 
 		console.log(`The geolocation databases were updated in ${time}.`);

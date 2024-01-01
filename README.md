@@ -12,7 +12,7 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 * Server location
 * IP address(es)
 * HTTP status code and version
-* Load time, time to first byte and first paint
+* Load time, time to first byte, first paint and largest paint
 * Transfer size
 * \*Last modified
 * Certificate issuer and expiration date
@@ -41,6 +41,7 @@ All of this information is determined offline and locally in the browser. Users 
 * HTTP status code
 * HTTP version
 * Load time
+* Largest Contentful Paint time
 
 Users can hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol and HSTS status.
 
@@ -59,7 +60,7 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 	* Users can select the database with the most accuracy for their locations of interest
 	* All databases support both [IPv4](https://en.wikipedia.org/wiki/IPv4) and [IPv6](https://en.wikipedia.org/wiki/IPv6) addresses
 	* Supports IPv4-mapped, IPv4-compatible and IPv4-embedded IPv6 addresses
-	* They are prepossessed into a constant [CSV format](https://en.wikipedia.org/wiki/Comma-separated_values) by my [IP Geolocation Databases](https://gitlab.com/tdulcet/ip-geolocation-dbs) repository
+	* They are prepossessed into a constant [TSV format](https://en.wikipedia.org/wiki/Tab-separated_values) by my [IP Geolocation Databases](https://gitlab.com/tdulcet/ip-geolocation-dbs) repository
 	* Updates are provided either daily, weekly or monthly depending on the database
 	* One of the full location databases is localized in eight languages
 	* The database runs in a separate thread to improve performance
