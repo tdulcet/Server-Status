@@ -56,55 +56,27 @@ function agetGeoIP(url, v, cache, retry = 0) {
 
 			console.timeLog(alabel);
 
-			let GEOIP = text.split("\n").filter((r) => r.length);
+			let GEOIP = text.split("\n").filter((r) => r.length).map((r) => r.split("\t"));
+			// console.log(GEOIP);
 
-			// Use TSV format starting in 2024
-			if (Date.UTC(2024) <= Date.now()) {
-				GEOIP = GEOIP.map((r) => r.split("\t"));
-				// console.log(GEOIP);
+			console.timeLog(alabel);
 
-				console.timeLog(alabel);
-
-				switch (settings.GeoDB) {
-					case 1:
-					case 2:
-					case 9:
-					case 3:
-					case 4:
-					case 5:
-						GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country] : ([start, end, country]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country]));
-						break;
-					case 6:
-					case 7:
-						GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state1, city, lat, lon]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state1, city, lat, lon]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
-						break;
-					case 8:
-						GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state2, state1, city, lat, lon]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state2, state1, city, lat, lon]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
-						break;
-				}
-			} else {
-				GEOIP = GEOIP.map((r) => r.split(/("[^"]+"|[^",]*)(?:,|$)/u).filter((x, i) => i % 2 !== 0).map((x) => x.startsWith('"') && x.endsWith('"') ? x.slice(1, -1) : x));
-				// console.log(GEOIP);
-
-				console.timeLog(alabel);
-
-				switch (settings.GeoDB) {
-					case 1:
-					case 2:
-					case 9:
-					case 3:
-					case 4:
-					case 5:
-						GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country]) => [Number.parseInt(start, 10), Number.parseInt(end, 10), country] : ([start, end, country]) => [BigInt(start), BigInt(end), country]));
-						break;
-					case 6:
-					case 7:
-						GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state1, city, lat, lon]) => [Number.parseInt(start, 10), Number.parseInt(end, 10), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state1, city, lat, lon]) => [BigInt(start), BigInt(end), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
-						break;
-					case 8:
-						GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state2, state1, city, lat, lon]) => [Number.parseInt(start, 10), Number.parseInt(end, 10), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state2, state1, city, lat, lon]) => [BigInt(start), BigInt(end), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
-						break;
-				}
+			switch (settings.GeoDB) {
+				case 1:
+				case 2:
+				case 9:
+				case 3:
+				case 4:
+				case 5:
+					GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country] : ([start, end, country]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country]));
+					break;
+				case 6:
+				case 7:
+					GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state1, city, lat, lon]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state1, city, lat, lon]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
+					break;
+				case 8:
+					GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state2, state1, city, lat, lon]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state2, state1, city, lat, lon]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
+					break;
 			}
 
 			console.timeLog(alabel);
@@ -139,8 +111,8 @@ function agetGeoIP(url, v, cache, retry = 0) {
  */
 async function getGeoLoc(date, languages, cache) {
 	let dir = null;
-	let file4 = "ipv4.csv";
-	let file6 = "ipv6.csv";
+	let file4 = "ipv4.tsv";
+	let file6 = "ipv6.tsv";
 
 	switch (settings.GeoDB) {
 		case 1:
@@ -176,8 +148,8 @@ async function getGeoLoc(date, languages, cache) {
 			console.log(languages, locale);
 
 			dir = "geolite2-city";
-			file4 = `ipv4-${locale}.csv`;
-			file6 = `ipv6-${locale}.csv`;
+			file4 = `ipv4-${locale}.tsv`;
+			file6 = `ipv6-${locale}.tsv`;
 			break;
 		}
 	}
@@ -356,13 +328,7 @@ function setSettings(message) {
 			if (GEOIP.GeoIPv4 && GEOIP.GeoIPv6) {
 				parseGeoLoc(GEOIP.GeoIPv4, GEOIP.GeoIPv6);
 			} else {
-				// Use TSV format starting in 2024
-				const y2024 = Date.UTC(2024);
-				if (y2024 <= Date.now() && y2024 > GEOIP.date) {
-					/* await */ getGeoLoc(GEOIP.date, message.languages);
-				} else {
-					/* await */ getGeoLoc(GEOIP.date, message.languages, "force-cache");
-				}
+				/* await */ getGeoLoc(GEOIP.date, message.languages, "force-cache");
 			}
 		} else {
 			getGeoLoc(message.date, message.languages);
