@@ -287,7 +287,7 @@ export function getmessage(securityInfo) {
  * @returns {string}
  */
 export function countryCode(country) {
-	return Array.from(country.toUpperCase(), (c) => String.fromCodePoint(c.codePointAt() + 127397)).join("");
+	return Array.from(country.toUpperCase(), (c) => String.fromCodePoint(c.codePointAt() + 0x1F1A5)).join("");
 }
 
 /**

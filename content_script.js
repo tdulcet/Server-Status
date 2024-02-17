@@ -30,7 +30,7 @@ new PerformanceObserver((list, observer) => {
 	const entries = list.getEntries();
 	// console.log(entries);
 	const entry = entries.find((x) => x.name === "first-contentful-paint");
-	console.log(`First Contentful Paint: ${entry ? `${entry.startTime} ms` : "None"}`, entry);
+	// console.log(`First Contentful Paint: ${entry ? `${entry.startTime} ms` : "None"}`, entry);
 
 	paint = entries;
 	send();
@@ -40,7 +40,7 @@ new PerformanceObserver((list, observer) => {
 	const entries = list.getEntries();
 	// console.log(entries);
 	const entry = entries.at(-1);
-	console.log(`Largest Contentful Paint: ${entry.startTime} ms`, entry);
+	// console.log(`Largest Contentful Paint: ${entry.startTime} ms`, entry);
 
 	lcp = entries;
 	send();
