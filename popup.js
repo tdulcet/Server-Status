@@ -108,8 +108,8 @@ function getSecondsAsDigitalClock(sec_num) {
 function outputtimer(time, now) {
 	const sec_num = Math.floor(time / 1000) - Math.floor(now / 1000);
 	const days = Math.floor(sec_num / 86400);
-	let text = "";
-	let color = "";
+	let text;
+	let color;
 	if (sec_num > 0) {
 		text = getSecondsAsDigitalClock(sec_num);
 		color = days > WARNDAYS ? "green" : "gold"; // "yellow"
@@ -337,7 +337,7 @@ function handleError(error) {
  * @returns {string}
  */
 function status(statusCode) {
-	let emoji = "";
+	let emoji;
 	if (statusCode >= 100 && statusCode < 200) {
 		emoji = statusEmojis[0];
 	} else if (statusCode >= 200 && statusCode < 300) {
@@ -467,7 +467,7 @@ function checkblacklist(domain, blacklist, address) {
 			document.getElementById("blacklist").innerText += `🚫\u00A0${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
 			document.querySelector(".blacklist").classList.remove("hidden");
 		}
-	}).catch(() => { });
+	}).catch(() => {});
 }
 
 /**
@@ -699,14 +699,14 @@ function updateTable(requests) {
 							const { start, end } = certificate.validity;
 							const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
 							const days = Math.floor(sec / 86400);
-							let title = "";
-							let color = "";
+							let title;
+							let color;
 							if (sec > 0) {
 								// title += 'expires in ' + days.toLocaleString() + ' days';
-								title += `Expires ${rtf.format(days, "day")} (${outputdateRange(start, end)})`;
+								title = `Expires ${rtf.format(days, "day")} (${outputdateRange(start, end)})`;
 								color = days > WARNDAYS ? "green" : "gold"; // "yellow"
 							} else {
-								title += `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
+								title = `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
 								color = "red";
 							}
 							const cell = row.insertCell();
@@ -847,7 +847,7 @@ function updateTable(requests) {
 					cell.textContent = "–";
 
 					if (GeoDB && requests.size > 1) {
-						cell = row.insertCell();
+						/* cell =  */row.insertCell();
 					}
 
 					row.classList.add("blocked");
@@ -946,7 +946,7 @@ function updatePopup(tabId, tab) {
 						checkblacklists(url.hostname, ipv4s, ipv6s);
 					}
 					// console.log(ipv4, ipv6);
-				}).catch((error) => {
+				}).catch((/* error */) => {
 					// console.error(error);
 					if (BLACKLIST) {
 						checkblacklists(url.hostname, ipv4 && [details.ip], ipv6 && [details.ip]);
@@ -967,7 +967,7 @@ function updatePopup(tabId, tab) {
 		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "server");
 		const aheader = details.responseHeaders.find((e) => e.name.toLowerCase() === "x-powered-by");
 		if (header || aheader) {
-			let text = "";
+			let text;
 			if (header) {
 				text = header.value;
 				if (aheader) {
@@ -989,7 +989,7 @@ function updatePopup(tabId, tab) {
 			getGeoIP([details.ip]).then(([info]) => {
 				// console.log(details.ip, info);
 				if (info?.country) {
-					const text = `${outputlocation(info)}\u00A0${countryCode(info.country)}${info.lon != null ? `\u00A0${earth(info.lon)}` : ""}`;
+					const text = `${outputlocation(info)}\u00A0${countryCode(info.country)}${info.lon == null ? "" : `\u00A0${earth(info.lon)}`}`;
 					if (MAP && info.lat != null && info.lon != null) {
 						location.replaceChildren(`${text}\u00A0\u00A0`, ...map(info.lat, info.lon));
 					} else {

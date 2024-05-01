@@ -344,10 +344,9 @@ addEventListener("message", (event) => {
 	// console.log(message);
 
 	switch (message.type) {
-		case WORKER: {
+		case WORKER:
 			getGeoLoc(message.date, message.languages);
 			break;
-		}
 		case LOCATION: {
 			const response = {
 				type: LOCATION,
@@ -357,10 +356,9 @@ addEventListener("message", (event) => {
 			event.ports[0].postMessage(response);
 			break;
 		}
-		case BACKGROUND: {
+		case BACKGROUND:
 			setSettings(message);
 			break;
-		}
 		// No default
 	}
 });

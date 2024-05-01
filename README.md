@@ -18,7 +18,7 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 * Certificate issuer and expiration date
 * SSL/TLS protocol
 * [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) (HSTS) status
-* Number of requests and a Requests table with a row for each hostname/domain:
+* Requests table with a row for each hostname/domain:
 	* Number of connections
 	* Icon(s) representing the classification by Firefox's [Enhanced Tracking Protection](https://support.mozilla.org/kb/enhanced-tracking-protection-firefox-desktop) (ETP) feature
 	* Icon representing the security state
@@ -162,6 +162,7 @@ Pull requests welcome! Ideas for contributions:
 * Show the server location on a globe
 * Show a list of the number of connections for each country for all pages (see [bug 1796768](https://bugzilla.mozilla.org/show_bug.cgi?id=1796768), suggested by Daniel Connelly)
 * Show requests that occurred outside a tab
+* Allow the user to enter and check the location of individual IP addresses
 * Allow installing in Firefox for Android from AMO (see [here](https://github.com/mozilla-mobile/fenix/issues/20736) and [bug 1796184](https://bugzilla.mozilla.org/show_bug.cgi?id=1796184)) and sync settings (see [bug 1625257](https://bugzilla.mozilla.org/show_bug.cgi?id=1625257))
 * Add support for Chromium
 	* `webRequest.getSecurityInfo()` is not yet supported (see [bug 628819](https://bugs.chromium.org/p/chromium/issues/detail?id=628819))

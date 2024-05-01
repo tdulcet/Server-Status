@@ -131,7 +131,10 @@ function getImageData(emoji, size) {
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
 
-	if (!IS_LINUX) {
+	if (IS_LINUX) {
+		// draw the emoji
+		ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : IS_LINUX ? 59 / 96 : 13 / 24));
+	} else {
 		let font_size = size / 2;
 		let width = 0;
 		let height = 0;
@@ -150,9 +153,6 @@ function getImageData(emoji, size) {
 		height = Math.abs(textMetrics.actualBoundingBoxAscent) - Math.abs(textMetrics.actualBoundingBoxDescent);
 		// draw the emoji
 		ctx.fillText(emoji, (size + width) / 2, (size + height) / 2);
-	} else {
-		// draw the emoji
-		ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : IS_LINUX ? 59 / 96 : 13 / 24));
 	}
 
 	return ctx.getImageData(0, 0, size, size);
@@ -254,7 +254,7 @@ async function updateIcon(tabId, tab) {
 
 			const country = info?.country;
 			// Server location
-			title.push(`𝗦𝗲𝗿𝘃𝗲𝗿 𝗹𝗼𝗰𝗮𝘁𝗶𝗼𝗻:  ${country ? `${outputlocation(info)} (${country}) ${countryCode(country)}${info.lon != null ? ` ${earth(info.lon)}` : ""}` : "Unknown"}`);
+			title.push(`𝗦𝗲𝗿𝘃𝗲𝗿 𝗹𝗼𝗰𝗮𝘁𝗶𝗼𝗻:  ${country ? `${outputlocation(info)} (${country}) ${countryCode(country)}${info.lon == null ? "" : ` ${earth(info.lon)}`}` : "Unknown"}`);
 
 			if (settings.icon === 1) {
 				if (country) {
@@ -424,7 +424,7 @@ async function updateIcon(tabId, tab) {
 			}
 			break;
 		}
-		case 7: {
+		case 7:
 			if (tab.performance) {
 				const [navigation] = tab.performance.navigation;
 				const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
@@ -442,8 +442,7 @@ async function updateIcon(tabId, tab) {
 				text = numberFormat.format(load);
 			}
 			break;
-		}
-		case 8: {
+		case 8:
 			if (tab.performance?.lcp) {
 				const lcp = tab.performance.lcp.at(-1);
 				if (lcp.startTime <= 2500) {
@@ -459,7 +458,6 @@ async function updateIcon(tabId, tab) {
 				text = numberFormat.format(lcp.startTime);
 			}
 			break;
-		}
 	}
 	setIcon(tabId, icon, title.join("  \n"), text, backgroundColor);
 }
@@ -816,11 +814,11 @@ function createRegEx(tree) {
 	for (const char in tree) {
 		if (char) {
 			const atree = tree[char];
-			if (!("" in atree && Object.keys(atree).length === 1)) {
+			if ("" in atree && Object.keys(atree).length === 1) {
+				characterClass.push(char);
+			} else {
 				const recurse = createRegEx(atree);
 				alternatives.push(recurse + char);
-			} else {
-				characterClass.push(char);
 			}
 		}
 	}
@@ -1027,7 +1025,7 @@ function sendSettings(details, tab) {
 		};
 		// console.log(response);
 
-		browser.runtime.sendMessage(response).catch((error) => {
+		browser.runtime.sendMessage(response).catch((/* error */) => {
 			// console.error(error);
 			popup = null;
 		});
@@ -1121,11 +1119,10 @@ function setSettings(asettings) {
 					// console.log(message);
 
 					switch (message.type) {
-						case NOTIFICATION: {
+						case NOTIFICATION:
 							notification(message.title, message.message, message.date);
 							break;
-						}
-						case WORKER: {
+						case WORKER:
 							setIcon(null, icons[0], null, null, null);
 
 							for (const [tabId, tab] of tabs) {
@@ -1134,13 +1131,11 @@ function setSettings(asettings) {
 								}
 							}
 							break;
-						}
-						case BACKGROUND: {
+						case BACKGROUND:
 							setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
 
 							browser.storage.local.set({ GEOIP: message.GEOIP });
 							break;
-						}
 						// No default
 					}
 				});
@@ -1252,7 +1247,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			// console.log(response);
 			return Promise.resolve(response);
 		}
-		case LOCATION: {
+		case LOCATION:
 			return new Promise((resolve) => {
 				const channel = new MessageChannel();
 
@@ -1263,8 +1258,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 
 				worker.postMessage(message, [channel.port2]);
 			});
-		}
-		case BACKGROUND: {
+		case BACKGROUND:
 			setSettings(message.optionValue);
 
 			for (const [tabId, tab] of tabs) {
@@ -1273,7 +1267,6 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				}
 			}
 			break;
-		}
 		case CONTENT: {
 			const tab = tabs.get(sender.tab.id);
 			if (tab) {
