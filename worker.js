@@ -85,13 +85,13 @@ function agetGeoIP(url, v, cache, retry = 0) {
 			let length = response.headers.get("Content-Length");
 			length &&= Number.parseInt(length, 10);
 			console.log(Array.from(response.headers.entries()), modified, text.length, length);
-			
+
 			return [GEOIP, modified, length];
 		}
 
 		console.error(response);
 		console.timeEnd(alabel);
-		
+
 		return Promise.reject();
 	}).catch(async (error) => {
 		if (retry >= 2) {
@@ -99,7 +99,7 @@ function agetGeoIP(url, v, cache, retry = 0) {
 		}
 		console.error(error);
 		await delay((1 << retry) * 1000);
-		
+
 		return agetGeoIP(url, v, cache, retry + 1);
 	});
 }

@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/tdulcet/Server-Status/workflows/CI/badge.svg?branch=main)](https://github.com/tdulcet/Server-Status/actions)
+[![Actions Status](https://github.com/tdulcet/Server-Status/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tdulcet/Server-Status/actions/workflows/ci.yml)
 
 # Server Status
 Quickly view basic info about every webpage
