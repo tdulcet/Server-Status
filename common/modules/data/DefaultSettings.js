@@ -14,6 +14,7 @@
 const defaultSettings = {
 	settings: {
 		icon: "1",
+		badge: true,
 		color: "#0000ff", // Blue
 		warndays: 3, // Days
 		open: false,
