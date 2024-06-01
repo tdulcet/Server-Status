@@ -23,6 +23,7 @@ const wait = 60;
 
 const settings = {
 	icon: null,
+	badge: null,
 	color: null,
 	warndays: null, // Days
 	open: null,
@@ -192,14 +193,17 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
 		title,
 		tabId
 	});
-	browser.browserAction.setBadgeText({
-		text,
-		tabId
-	});
-	browser.browserAction.setBadgeBackgroundColor({
-		color: backgroundColor,
-		tabId
-	});
+
+	if(settings.badge) {
+		browser.browserAction.setBadgeText({
+			text,
+			tabId
+		});
+		browser.browserAction.setBadgeBackgroundColor({
+			color: backgroundColor,
+			tabId
+		});
+	}
 }
 
 /**
@@ -1052,6 +1056,7 @@ function setSettings(asettings) {
 	settings.map = Number.parseInt(asettings.map, 10);
 	settings.lookup = Number.parseInt(asettings.lookup, 10);
 	settings.icon = Number.parseInt(asettings.icon, 10);
+	settings.badge = asettings.badge;
 	settings.dns = asettings.dns;
 	settings.blacklist = asettings.blacklist;
 	settings.domainblacklists = [asettings.domainblacklist];
