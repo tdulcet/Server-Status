@@ -36,6 +36,8 @@ const defaultSettings = {
 		ipv6blacklist: "zen.spamhaus.org",
 		send: true,
 		// columns:
+		download: true,
+		upload: true,
 		classification: true,
 		security: true,
 		expiration: true,

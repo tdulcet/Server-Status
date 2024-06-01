@@ -26,20 +26,20 @@ function send() {
 	browser.runtime.sendMessage(response);
 }
 
-new PerformanceObserver((list, observer) => {
+new PerformanceObserver((list/* , observer */) => {
 	const entries = list.getEntries();
 	// console.log(entries);
-	const entry = entries.find((x) => x.name === "first-contentful-paint");
+	// const entry = entries.find((x) => x.name === "first-contentful-paint");
 	// console.log(`First Contentful Paint: ${entry ? `${entry.startTime} ms` : "None"}`, entry);
 
 	paint = entries;
 	send();
 }).observe({ type: "paint", buffered: true });
 
-new PerformanceObserver((list, observer) => {
+new PerformanceObserver((list/* , observer */) => {
 	const entries = list.getEntries();
 	// console.log(entries);
-	const entry = entries.at(-1);
+	// const entry = entries.at(-1);
 	// console.log(`Largest Contentful Paint: ${entry.startTime} ms`, entry);
 
 	lcp = entries;
@@ -49,7 +49,7 @@ new PerformanceObserver((list, observer) => {
 if (document.readyState === "complete") {
 	send();
 } else {
-	addEventListener("load", (event) => {
+	addEventListener("load", (/* event */) => {
 		send();
 	}, true);
 }

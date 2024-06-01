@@ -299,7 +299,8 @@ function getGeoIP(address) {
 	if (GeoIPv4 && GeoIPv6) {
 		if (IPv4RE.test(address)) {
 			return searchGeoIP(GeoIPv4, IPv4toInt(address));
-		} else if (IPv6RE.test(address)) {
+		}
+		if (IPv6RE.test(address)) {
 			address = expand(address.toLowerCase()).join("");
 			// IPv4-mapped, IPv4-compatible and IPv4-embedded IPv6 addresses
 			if (address.startsWith("00000000000000000000ffff") || address.startsWith("000000000000000000000000") || address.startsWith("0064ff9b")) {

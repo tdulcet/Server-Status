@@ -32,10 +32,49 @@ a.ipv6 {
 	color: teal;
 }
 
+.green {
+	color: green;
+}
+
+.teal {
+	color: teal;
+}
+
+.blue {
+	color: blue;
+}
+
+.yellow {
+	color: gold;
+}
+
+.red {
+	color: red;
+}
+
+.b {
+	opacity: 0.5;
+}
+
+.kib {
+	opacity: 0.75;
+}
+
+.mib {
+}
+
+.gib {
+	font-weight: bold;
+}
+
 .blocked {
 	opacity: 0.5;
 }
 
 td.highlight {
 	color: blue;
+}
+
+td.right {
+	text-align: right;
 }

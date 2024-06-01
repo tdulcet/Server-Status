@@ -47,6 +47,8 @@ const settings = {
 };
 
 const columns = {
+	download: null,
+	upload: null,
 	classification: null,
 	security: null,
 	expiration: null,
@@ -194,7 +196,7 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
 		tabId
 	});
 
-	if(settings.badge) {
+	if (settings.badge) {
 		browser.browserAction.setBadgeText({
 			text,
 			tabId
@@ -481,7 +483,7 @@ async function updateActiveTab(details) {
 			const title = ["http:", "https:"].includes(aurl.protocol) ? ", try ⟳ refreshing the page" : "";
 			if (tabs.has(details.tabId)) {
 				const tab = tabs.get(details.tabId);
-				if (tab.details && tab.details.statusLine) {
+				if (tab.details?.statusLine) {
 					const url = new URL(tab.details.url);
 					if (url.origin === aurl.origin) {
 						updateIcon(details.tabId, tab);
@@ -492,7 +494,13 @@ async function updateActiveTab(details) {
 						if (tabInfo.isInReaderMode) {
 							updateIcon(details.tabId, tab);
 						} else {
-							const tab = { details: null, securityInfo: null, requests: new Map() };
+							const tab = {
+								details: null,
+								securityInfo: null,
+								requests: new Map(),
+								requestSize: 0,
+								responseSize: 0
+							};
 							tabs.set(details.tabId, tab);
 							// certificateIcons[5]
 							setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page${title}`, null, null);
@@ -538,10 +546,20 @@ function beforeRequest(details) {
 		const aurl = new URL(details.url);
 
 		if (details.type === "main_frame") {
-			tabs.set(details.tabId, { details, requests: new Map() });
+			tabs.set(details.tabId, {
+				details,
+				requests: new Map(),
+				requestSize: 0,
+				responseSize: 0
+			});
 			// console.log("beforeRequest", details);
 		} else if (!tabs.has(details.tabId)) {
-			tabs.set(details.tabId, { details: null, requests: new Map() });
+			tabs.set(details.tabId, {
+				details: null,
+				requests: new Map(),
+				requestSize: 0,
+				responseSize: 0
+			});
 			// certificateIcons[5]
 			setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
 			console.debug("Access denied", details.tabId, aurl.origin);
@@ -550,11 +568,15 @@ function beforeRequest(details) {
 		const tab = tabs.get(details.tabId);
 
 		if (!tab.requests.has(aurl.hostname)) {
-			tab.requests.set(aurl.hostname, new Map());
+			tab.requests.set(aurl.hostname, {
+				connections: new Map(),
+				requestSize: 0,
+				responseSize: 0
+			});
 		}
 
 		const requests = tab.requests.get(aurl.hostname);
-		requests.set(details.requestId, { details });
+		requests.connections.set(details.requestId, { details });
 	}
 }
 
@@ -598,12 +620,12 @@ async function headersReceived(details) {
 
 			const requests = tab.requests.get(aurl.hostname);
 
-			if (!requests || !requests.has(details.requestId)) {
+			if (!requests || !requests.connections.has(details.requestId)) {
 				console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
 				return;
 			}
 
-			requests.set(details.requestId, { details, securityInfo });
+			requests.connections.set(details.requestId, { details, securityInfo });
 
 			sendSettings(details, tab);
 		} catch (error) {
@@ -652,12 +674,12 @@ function beforeRedirect(details) {
 
 		const requests = tab.requests.get(aurl.hostname);
 
-		if (!requests || !requests.has(details.requestId)) {
+		if (!requests || !requests.connections.has(details.requestId)) {
 			console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
 			return;
 		}
 
-		const request = requests.get(details.requestId);
+		const request = requests.connections.get(details.requestId);
 		if (!request.details) {
 			console.error("No Details!", request);
 		}
@@ -695,15 +717,21 @@ function completed(details) {
 			tab.completed = true;
 			// console.log("completed", details);
 		}
+	
+		tab.requestSize += details.requestSize;
+		tab.responseSize += details.responseSize;
 
 		const requests = tab.requests.get(aurl.hostname);
 
-		if (!requests || !requests.has(details.requestId)) {
+		if (!requests || !requests.connections.has(details.requestId)) {
 			console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
 			return;
 		}
+	
+		requests.requestSize += details.requestSize;
+		requests.responseSize += details.responseSize;
 
-		const request = requests.get(details.requestId);
+		const request = requests.connections.get(details.requestId);
 		request.completed = true;
 
 		sendSettings(details, tab);
@@ -738,12 +766,12 @@ function errorOccurred(details) {
 
 		const requests = tab.requests.get(aurl.hostname);
 
-		if (!requests || !requests.has(details.requestId)) {
+		if (!requests || !requests.connections.has(details.requestId)) {
 			console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
 			return;
 		}
 
-		const request = requests.get(details.requestId);
+		const request = requests.connections.get(details.requestId);
 		request.error = details.error;
 
 		sendSettings(details, tab);
@@ -870,7 +898,7 @@ function createTree(arr) {
 	}
 
 	Object.freeze(tree);
-	return createRegEx(tree).replaceAll(".", "\\.").replaceAll("*", "[^.]+");
+	return createRegEx(tree).replaceAll(".", String.raw`\.`).replaceAll("*", "[^.]+");
 }
 
 /**
@@ -1065,6 +1093,8 @@ function setSettings(asettings) {
 	settings.color = asettings.color;
 	settings.send = asettings.send;
 
+	columns.download = asettings.download;
+	columns.upload = asettings.upload;
 	columns.classification = asettings.classification;
 	columns.security = asettings.security;
 	columns.expiration = asettings.expiration;
@@ -1131,7 +1161,7 @@ function setSettings(asettings) {
 							setIcon(null, icons[0], null, null, null);
 
 							for (const [tabId, tab] of tabs) {
-								if (tab.details && tab.details.statusLine) {
+								if (tab.details?.statusLine) {
 									updateIcon(tabId, tab);
 								}
 							}
@@ -1267,7 +1297,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			setSettings(message.optionValue);
 
 			for (const [tabId, tab] of tabs) {
-				if (tab.details && tab.details.statusLine) {
+				if (tab.details?.statusLine) {
 					updateIcon(tabId, tab);
 				}
 			}

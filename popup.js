@@ -23,6 +23,8 @@ let BLACKLIST = false;
 let SEND = true;
 
 let COLUMNS = {
+	download: true,
+	upload: true,
 	classification: true,
 	security: true,
 	expiration: true,
@@ -112,12 +114,12 @@ function outputtimer(time, now) {
 	let color;
 	if (sec_num > 0) {
 		text = getSecondsAsDigitalClock(sec_num);
-		color = days > WARNDAYS ? "green" : "gold"; // "yellow"
+		color = days > WARNDAYS ? "green" : "yellow";
 	} else {
 		text = "Expired";
 		color = "red";
 	}
-	timer.style.color = color;
+	timer.classList.add(color);
 	timer.textContent = text;
 }
 
@@ -476,7 +478,7 @@ function checkblacklist(domain, blacklist, address) {
  * @param {string} hostname
  * @param {string[]} [ipv4s]
  * @param {string[]} [ipv6s]
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function checkblacklists(hostname, ipv4s, ipv6s) {
 	const ipv4 = IPv4RE.test(hostname);
@@ -543,7 +545,7 @@ function getGeoIP(addresses) {
  * @param {string} link
  * @returns {void}
  */
-function copyToClipboard(text/* , link */) {
+function copyToClipboard(text, _link) {
 	// https://github.com/mdn/webextensions-examples/blob/master/context-menu-copy-link-with-types/clipboard-helper.js
 	/* const atext = encodeXML(text);
 	const alink = encodeXML(link);
@@ -588,6 +590,20 @@ function click(event) {
 }
 
 /**
+ * Update transfer size.
+ *
+ * @param {Object} tab
+ * @param {number} tab.requestSize
+ * @param {number} tab.responseSize
+ * @returns {void}
+ */
+function updateTransfer({ requestSize, responseSize }) {
+	document.getElementById("download").textContent = `${outputunit(responseSize, false)}B${responseSize >= 1000 ? ` (${outputunit(responseSize, true)}B)` : ""}`;
+	document.getElementById("upload").textContent = `${outputunit(requestSize, false)}B${requestSize >= 1000 ? ` (${outputunit(requestSize, true)}B)` : ""}`;
+	document.querySelector(".size").classList.remove("hidden");
+}
+
+/**
  * Update performance data.
  *
  * @param {Object} performance
@@ -619,12 +635,13 @@ function updatePerformance(performance) {
 		document.querySelector(".lcp").classList.remove("hidden");
 	}
 
-	const size = navigation.transferSize;
+	/* const size = navigation.transferSize;
 	document.getElementById("size").textContent = size === 0 && navigation.decodedBodySize > 0 ? "Cached" : `${outputunit(size, false)}B${size >= 1000 ? ` (${outputunit(size, true)}B)` : ""}`;
 
 	for (const element of document.querySelectorAll(".content")) {
 		element.classList.remove("hidden");
-	}
+	} */
+	document.querySelector(".content").classList.remove("hidden");
 }
 
 /**
@@ -640,7 +657,7 @@ function updateTable(requests) {
 		const table = document.createElement("table");
 
 		for (const [hostname, request] of requests) {
-			const arequests = Array.from(request.values());
+			const arequests = Array.from(request.connections.values());
 			let connections = 0;
 			let completed = 0;
 			let redirected = 0;
@@ -668,6 +685,42 @@ function updateTable(requests) {
 				cell.textContent = `${numberFormat.format(completed + redirected)}${BLOCKED ? `/${numberFormat.format(blocked + errored)}` : ""}/${numberFormat.format(connections)}`;
 				if (connections) {
 					cell.classList.add("highlight");
+				}
+
+				if (COLUMNS.download) {
+					const cell = row.insertCell();
+					const { responseSize } = request;
+					cell.title = `Download/Response: ${outputunit(responseSize, false)}B${responseSize >= 1000 ? ` (${outputunit(responseSize, true)}B)` : ""}`;
+					cell.textContent = `${outputunit(responseSize, false)}B`;
+					let aclass;
+					if (responseSize < 1024) {
+						aclass = "b";
+					} else if (responseSize < 1024 ** 2) {
+						aclass = "kib";
+					} else if (responseSize < 1024 ** 3) {
+						aclass = "mib";
+					} else {
+						aclass = "gib";
+					}
+					cell.classList.add(aclass, "right");
+				}
+
+				if (COLUMNS.upload) {
+					const cell = row.insertCell();
+					const { requestSize } = request;
+					cell.title = `Upload/Request: ${outputunit(requestSize, false)}B${requestSize >= 1000 ? ` (${outputunit(requestSize, true)}B)` : ""}`;
+					cell.textContent = `${outputunit(requestSize, false)}B`
+					let aclass;
+					if (requestSize < 1024) {
+						aclass = "b";
+					} else if (requestSize < 1024 ** 2) {
+						aclass = "kib";
+					} else if (requestSize < 1024 ** 3) {
+						aclass = "mib";
+					} else {
+						aclass = "gib";
+					}
+					cell.classList.add(aclass, "right");
 				}
 
 				if (COLUMNS.classification) {
@@ -704,21 +757,45 @@ function updateTable(requests) {
 							if (sec > 0) {
 								// title += 'expires in ' + days.toLocaleString() + ' days';
 								title = `Expires ${rtf.format(days, "day")} (${outputdateRange(start, end)})`;
-								color = days > WARNDAYS ? "green" : "gold"; // "yellow"
+								color = days > WARNDAYS ? "green" : "yellow";
 							} else {
 								title = `Expired ${rtf.format(days, "day")} (${outputdate(end)})`;
 								color = "red";
 							}
 							const cell = row.insertCell();
 							cell.title = title;
-							cell.style.color = color;
-							cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+							const span = document.createElement("span");
+							span.classList.add(color);
+							span.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+							cell.append(span);
 						}
 
 						if (COLUMNS.tlsversion) {
 							const cell = row.insertCell();
 							cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}${obj.secretKeyLength ? `, ${obj.secretKeyLength} bits` : ""}, ${obj.cipherSuite}`));
-							cell.textContent = Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion).map((str) => str?.startsWith("TLS") ? str.slice("TLS".length) : str))).join("\n");
+							cell.append(...Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion)), (version, index) => {
+								const span = document.createElement("span");
+								if (version?.startsWith("TLSv")) {
+									const [major, minor] = version.slice("TLSv".length).split(".").map((x) => Number.parseInt(x, 10));
+									let color;
+									if (major === 1) {
+										if (minor === 0 || minor === 1) {
+											color = "red";
+										} else if (minor === 2) {
+											color = "blue";
+										} else if (minor >= 3) {
+											color = "green";
+										}
+									} else if (major > 1) {
+										color = "green";
+									}
+									span.classList.add(color);
+									span.textContent = version.slice("TLS".length);
+								} else {
+									span.textContent = version;
+								}
+								return index ? ["\n", span] : [span];
+							}).flat());
 						}
 
 						if (COLUMNS.hsts) {
@@ -756,18 +833,43 @@ function updateTable(requests) {
 						}
 					}
 
-					const title = outputtitle(arequest.map((obj) => obj.details.statusLine), details.statusLine);
+					const title = (COLUMNS.httpversion || COLUMNS.httpstatus) && outputtitle(arequest.map((obj) => obj.details.statusLine), details.statusLine);
 
 					if (COLUMNS.httpversion) {
 						const cell = row.insertCell();
 						cell.title = title;
 						// Get HTTP version
 						const re = /^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: .*)?$/u;
-						cell.textContent = Array.from(new Set(arequest.map((obj) => {
+						cell.append(...Array.from(new Set(arequest.map((obj) => {
 							const regexResult = re.exec(obj.details.statusLine);
 							console.assert(regexResult, "Error: Unknown HTTP Status", obj.details.statusLine);
-							return regexResult ? regexResult[1] : emojis[2];
-						}))).join("\n");
+							return regexResult && regexResult[1];
+						})), (version, index) => {
+							const span = document.createElement("span");
+							if (version) {
+								const [major, minor] = version.split(".").map((x) => Number.parseInt(x, 10));
+								let color;
+								switch (major) {
+									case 0:
+										color = "red";
+										break;
+									case 1:
+										color = minor === 0 ? "red" : "blue";
+										break;
+									case 2:
+										color = "teal";
+										break;
+									default: if (major >= 3) {
+										color = "green";
+									}
+								}
+								span.classList.add(color);
+								span.textContent = version;
+							} else {
+								span.textContent = emojis[2];
+							}
+							return index ? ["\n", span] : [span];
+						}).flat());
 					}
 
 					if (COLUMNS.httpstatus) {
@@ -981,6 +1083,7 @@ function updatePopup(tabId, tab) {
 			document.querySelector(".server").classList.remove("hidden");
 		}
 	}
+
 	if (GeoDB) {
 		if (details.ip) {
 			const location = document.getElementById("location");
@@ -1003,6 +1106,9 @@ function updatePopup(tabId, tab) {
 			document.querySelector(".location").classList.remove("hidden");
 		}
 	}
+
+	updateTransfer(tab);
+
 	if (details.responseHeaders) {
 		// console.log(details.responseHeaders);
 		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "last-modified");
@@ -1199,6 +1305,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 			if (details.type === "main_frame") {
 				updatePopup(tabId, tab);
 			} else {
+				updateTransfer(tab);
 				updateTable(tab.requests);
 			}
 

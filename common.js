@@ -12,7 +12,7 @@ export const emojis = Object.freeze(["🧩", "ℹ️", "❓", "🌐", "✔️", 
 export const certificateEmojis = Object.freeze(["🔓", "🔒", "⚠️", "❌", "⛔", "🛡️"]);
 export const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", /* "🔵", "🟢", "🟡", "🔴", */ "🫖"]);
 // const digitEmojis = Object.freeze([...[...new Array(10)].map((x, i) => `${i}️`), ..."⓿❶❷❸❹❺❻❼❽❾", ..."⓪①②③④⑤⑥⑦⑧⑨"]);
-export const digitEmojis = Object.freeze([...new Array(10)].map((x, i) => `${i}️⃣`));
+export const digitEmojis = Object.freeze([...new Array(10)].map((_x, i) => `${i}️⃣`));
 
 const suffix_power_char = Object.freeze(["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]);
 
@@ -237,7 +237,7 @@ export function earth(longitude) {
 export function getissuer(issuer) {
 	// console.log(issuer);
 	const aissuer = {};
-	for (const item of issuer.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/u).filter((x, i) => i % 2 !== 0)) {
+	for (const item of issuer.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/u).filter((_x, i) => i % 2 !== 0)) {
 		const [type, value] = item.split("=");
 		aissuer[type] = value;
 	}
@@ -253,9 +253,9 @@ export function getissuer(issuer) {
 export function getHSTS(header) {
 	// console.log(header);
 	const aheader = {};
-	for (const item of header.split(/([\w-]+(?:=(?:"[^"]+"|[^";\s]*))?)(?:\s*;\s*|$)/u).filter((x, i) => i % 2 !== 0)) {
+	for (const item of header.split(/([\w-]+(?:=(?:"[^"]+"|[^";\s]*))?)(?:\s*;\s*|$)/u).filter((_x, i) => i % 2 !== 0)) {
 		const [type, value] = item.split("=");
-		aheader[type.toLowerCase()] = value && value.startsWith('"') && value.endsWith('"') ? value.slice(1, -1) : value;
+		aheader[type.toLowerCase()] = value?.startsWith('"') && value.endsWith('"') ? value.slice(1, -1) : value;
 	}
 	return aheader;
 }
