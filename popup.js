@@ -223,6 +223,9 @@ function lookup(hostname, address) {
 			break;
 		case 2:
 			url = `https://www.ip2location.com/${address}`;
+      break;
+		case 3:
+			url = `https://browserleaks.com/ip/${address}`;
 			break;
 		// No default
 	}
