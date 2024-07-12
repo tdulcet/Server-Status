@@ -49,9 +49,11 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 
 ❤️ Please visit [tealdulcet.com](https://www.tealdulcet.com/) to support this extension and my other software development.
 
-⬇️ Download from [Addons.mozilla.org](https://addons.mozilla.org/firefox/addon/server-status/) (AMO).
-
 \* On servers which provide this information
+
+## Download
+
+* [Addons.mozilla.org](https://addons.mozilla.org/firefox/addon/server-status/) (AMO)
 
 ## Features
 
@@ -90,7 +92,7 @@ Emoji | Description
 🏳️ | Flag for the country of the server location (supports all Unicode country flag emojis, currently 258)
 🌐 | The browser cached the page, so no actual connection was made (try refreshing it)
 ❓ | Location unknown (try selecting a different IP geolocation database)
-ℹ️ | The page failed to load, was blocked or access was denied (Firefox blocks access to some [Mozilla domains](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts))
+ℹ️ | The page failed to load, was blocked or access was denied (Firefox blocks access to some [Mozilla domains](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Content_scripts))
 🧩 | Unavailable for the page (it only works on standard HTTP/HTTPS webpages and you would need to refresh any existing pages after installing the add-on)
 
 ### Security/Connection state
@@ -128,7 +130,15 @@ Emoji | Description
 👁️ | Tracking (e.g. Ads, Analytics, etc.)
 👥 | Social tracking (i.e. Facebook, LinkedIn and Twitter)
 
-See the [official documentation](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived#additional_objects) for the full list of possible classification flags.
+See the [official documentation](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived#additional_objects) for the full list of possible classification flags.
+
+## Install from source
+
+1. Clone the repository:
+```bash
+git clone --recurse-submodules https://github.com/tdulcet/Server-Status.git
+```
+2. Follow [these instructions](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/) to install it in Firefox
 
 ## Other Extensions
 
@@ -147,9 +157,9 @@ Pull requests welcome! Ideas for contributions:
 * Refactor into more modules
 * Improve the popup design
 * Add more information to the popup
-* Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML) from the popup
-* Use the [Streams API](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API) to process the IP geolocation databases to reduce memory usage
-* Use the [TextMetrics](https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics) interface to dynamically determine the font size for each emoji when generating the icons (see [bug 1692791](https://bugzilla.mozilla.org/show_bug.cgi?id=1692791#c8))
+* Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/docs/Web/API/Element/innerHTML) from the popup
+* Use the [Streams API](https://developer.mozilla.org/docs/Web/API/Streams_API) to process the IP geolocation databases to reduce memory usage
+* Use the [TextMetrics](https://developer.mozilla.org/docs/Web/API/TextMetrics) interface to dynamically determine the font size for each emoji when generating the icons (see [bug 1692791](https://bugzilla.mozilla.org/show_bug.cgi?id=1692791#c8))
 * Show the IP address and location for cached requests (see [bug 1395020](https://bugzilla.mozilla.org/show_bug.cgi?id=1395020))
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))
 * Show requests intercepted by service workers (see [bug 1626831](https://bugzilla.mozilla.org/show_bug.cgi?id=1626831))
@@ -164,6 +174,8 @@ Pull requests welcome! Ideas for contributions:
 * Show requests that occurred outside a tab
 * Allow the user to enter and check the location of individual IP addresses
 * Allow installing in Firefox for Android from AMO (see [here](https://github.com/mozilla-mobile/fenix/issues/20736) and [bug 1796184](https://bugzilla.mozilla.org/show_bug.cgi?id=1796184)) and sync settings (see [bug 1625257](https://bugzilla.mozilla.org/show_bug.cgi?id=1625257))
+* Add support for Thunderbird
+	* Does not yet provide info on the S/MIME certificate or PGP key (see [bug 1899278](https://bugzilla.mozilla.org/show_bug.cgi?id=1899278))
 * Add support for Chromium
 	* `webRequest.getSecurityInfo()` is not yet supported (see [bug 628819](https://bugs.chromium.org/p/chromium/issues/detail?id=628819))
 * Localize the add-on

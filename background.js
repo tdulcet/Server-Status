@@ -73,6 +73,8 @@ const flagIcons = {};
 
 let httpsOnlyMode = null;
 
+let intervalId = null;
+let args = null;
 let popup = null;
 let worker = null;
 
@@ -717,7 +719,7 @@ function completed(details) {
 			tab.completed = true;
 			// console.log("completed", details);
 		}
-	
+
 		tab.requestSize += details.requestSize;
 		tab.responseSize += details.responseSize;
 
@@ -727,7 +729,7 @@ function completed(details) {
 			console.error(details.tabId, aurl.hostname, details.requestId, aurl.origin);
 			return;
 		}
-	
+
 		requests.requestSize += details.requestSize;
 		requests.responseSize += details.responseSize;
 
@@ -1038,29 +1040,47 @@ browser.alarms.onAlarm.addListener(handleAlarm);
  */
 function sendSettings(details, tab) {
 	if (popup && details.tabId === popup) {
-		const response = {
-			type: POPUP,
-			WARNDAYS: settings.warndays,
-			FULLIPv6: settings.fullipv6,
-			COMPACTIPv6: settings.compactipv6,
-			OPEN: settings.open,
-			BLOCKED: settings.blocked,
-			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
-			DNS: settings.dns,
-			SUFFIX: settings.suffix,
-			GeoDB: settings.GeoDB,
-			MAP: settings.map,
-			LOOKUP: settings.lookup,
-			SEND: settings.send,
-			details,
-			tab
-		};
-		// console.log(response);
+		const func = (details, tab) => {
+			const response = {
+				type: POPUP,
+				WARNDAYS: settings.warndays,
+				FULLIPv6: settings.fullipv6,
+				COMPACTIPv6: settings.compactipv6,
+				OPEN: settings.open,
+				BLOCKED: settings.blocked,
+				HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
+				DNS: settings.dns,
+				SUFFIX: settings.suffix,
+				GeoDB: settings.GeoDB,
+				MAP: settings.map,
+				LOOKUP: settings.lookup,
+				SEND: settings.send,
+				details,
+				tab
+			};
+			// console.log(response);
 
-		browser.runtime.sendMessage(response).catch((/* error */) => {
-			// console.error(error);
-			popup = null;
-		});
+			browser.runtime.sendMessage(response).catch((/* error */) => {
+				// console.error(error);
+				popup = null;
+				if (intervalId) {
+					clearInterval(intervalId);
+					intervalId = null;
+				}
+			});
+		};
+
+		if (!intervalId) {
+			func(details, tab);
+			intervalId = setInterval(() => {
+				if (args) {
+					func(...args);
+					args = null;
+				}
+			}, 1000);
+		} else {
+			args = [details, tab];
+		}
 	}
 }
 
@@ -1077,7 +1097,7 @@ function setSettings(asettings) {
 	settings.open = asettings.open;
 	settings.blocked = asettings.blocked;
 	settings.https = asettings.https;
-	const GeoDB = Number.parseInt(asettings.GeoDB, 10);
+	let GeoDB = Number.parseInt(asettings.GeoDB, 10);
 	settings.update = Number.parseInt(asettings.update, 10);
 	settings.updateidle = asettings.updateidle;
 	settings.idle = asettings.idle;
@@ -1141,6 +1161,13 @@ function setSettings(asettings) {
 	}
 
 	if (GeoDB) {
+		const convert = { 6: 3, 7: 4, 8: 5 };
+		// navigator.deviceMemory < 8
+		// navigator.connection.saveData
+		if (IS_ANDROID && GeoDB in convert) {
+			GeoDB = convert[GeoDB];
+		}
+
 		if (GeoDB !== settings.GeoDB) {
 			settings.GeoDB = GeoDB;
 
