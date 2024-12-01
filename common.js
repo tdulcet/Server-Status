@@ -40,12 +40,12 @@ export const rtf = new Intl.RelativeTimeFormat([], { numeric: "auto" });
 export const regionNames = new Intl.DisplayNames([], { type: "region" });
 
 // IPv4 address regular expression
-const IPv4 = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])`;
+const IPv4 = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?\d)?\d)\.){3}(?:25[0-5]|(?:2[0-4]|[01]?\d)?\d)`;
 export const IPv4RE = new RegExp(`^${IPv4}$`, "u");
 
 // IPv6 address regular expression
 // \p{ASCII_Hex_Digit}
-export const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
+export const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|\p{AHex}{0,4}::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::\p{AHex}{1,4}:|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
 export const IPv6RE = new RegExp(`^${IPv6}$`, "u");
 
 /**
@@ -153,15 +153,15 @@ export function IPv6toInt(address) {
 /**
  * Output seconds.
  *
- * @param {number} sec_num
+ * @param {number} sec
  * @returns {string}
  */
-export function outputseconds(sec_num) {
-	// console.log(sec_num);
-	const d = Math.floor(sec_num / 86400);
-	const h = Math.floor(sec_num % 86400 / 3600);
-	const m = Math.floor(sec_num % 3600 / 60);
-	const s = sec_num % 60;
+export function outputseconds(sec) {
+	// console.log(sec);
+	const d = Math.trunc(sec / 86400);
+	const h = Math.trunc(sec % 86400 / 3600);
+	const m = Math.trunc(sec % 3600 / 60);
+	const s = sec % 60;
 	const text = [];
 	if (d) {
 		text.push(numberFormat1.format(d));

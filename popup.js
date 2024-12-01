@@ -69,34 +69,28 @@ function notification(title, message) {
 }
 
 /**
- * Get seconds as digital clock.
+ * Output duration.
  *
- * @param {number} sec_num
+ * @param {number} sec
  * @returns {string}
  */
-function getSecondsAsDigitalClock(sec_num) {
+function outputduration(sec) {
 	// console.log(now);
-	const d = Math.floor(sec_num / 86400);
-	const h = Math.floor(sec_num % 86400 / 3600);
-	const m = Math.floor(sec_num % 3600 / 60);
-	const s = sec_num % 60;
+	const d = Math.floor(sec / 86400);
+	const h = Math.floor(sec % 86400 / 3600);
+	const m = Math.floor(sec % 3600 / 60);
+	const s = sec % 60;
 	let text = "";
-	if (d > 0) {
-		// text += d.toLocaleString() + '\xa0days ';
+	if (d) {
 		text += `${numberFormat1.format(d)} `;
 	}
-	if (d > 0 || h > 0) {
-		// text += ((h < 10) ? '0' + h : h) + '\xa0hours ';
+	if (d || h) {
 		text += `${numberFormat2.format(h)} `;
 	}
-	if (d > 0 || h > 0 || m > 0) {
-		// text += ((m < 10) ? '0' + m : m) + '\xa0minutes ';
+	if (d || h || m) {
 		text += `${numberFormat3.format(m)} `;
 	}
-	if (d > 0 || h > 0 || m > 0 || s > 0) {
-		// text += ((s < 10) ? '0' + s : s) + '\xa0seconds';
-		text += numberFormat4.format(s);
-	}
+	text += numberFormat4.format(s);
 	return text;
 }
 
@@ -108,12 +102,12 @@ function getSecondsAsDigitalClock(sec_num) {
  * @returns {void}
  */
 function outputtimer(time, now) {
-	const sec_num = Math.floor(time / 1000) - Math.floor(now / 1000);
-	const days = Math.floor(sec_num / 86400);
+	const sec = Math.floor((time - now) / 1000);
+	const days = Math.floor(sec / 86400);
 	let text;
 	let color;
-	if (sec_num > 0) {
-		text = getSecondsAsDigitalClock(sec_num);
+	if (sec > 0) {
+		text = outputduration(sec);
 		color = days > WARNDAYS ? "green" : "yellow";
 	} else {
 		text = "Expired";
@@ -142,21 +136,19 @@ function timerTick(time) {
 }
 
 /**
- * Output time in seconds.
+ * Output time in milliseconds.
  *
- * @param {number} time
+ * @param {number} msec
  * @returns {string}
  */
-function outputtime(time) {
-	const s = Math.floor(time / 1000);
-	const ms = time % 1000;
+function outputmsec(msec) {
+	const s = Math.floor(msec / 1000);
+	const ms = msec % 1000;
 	let text = "";
-	if (s > 0) {
+	if (s) {
 		text += `${numberFormat4.format(s)} `;
 	}
-	if (s > 0 || ms > 0) {
-		text += numberFormat5.format(ms);
-	}
+	text += numberFormat5.format(ms);
 	return text;
 }
 
@@ -368,7 +360,7 @@ function getClassification(details) {
 	let classifications = details.thirdParty ? details.urlClassification.thirdParty : details.urlClassification.firstParty;
 	if (classifications.length) {
 		if (classifications.some((c) => c.startsWith("fingerprinting"))) {
-			emojis.push("👣");
+			emojis.push("👣"); // 🫆
 		}
 		if (classifications.some((c) => c.startsWith("cryptomining"))) {
 			emojis.push("⚒️");
@@ -548,14 +540,18 @@ function getGeoIP(addresses) {
  * @param {string} link
  * @returns {void}
  */
-function copyToClipboard(text, _link) {
-	// https://github.com/mdn/webextensions-examples/blob/master/context-menu-copy-link-with-types/clipboard-helper.js
-	/* const atext = encodeXML(text);
-	const alink = encodeXML(link);
+function copyToClipboard(text, link) {
+	if (navigator.clipboard.write) {
+		const a = createlink(link);
+		a.textContent = text;
 
-	const html = `<a href="${alink}">${atext}</a>`; */
-
-	navigator.clipboard.writeText(text);
+		navigator.clipboard.write([new ClipboardItem({
+			"text/plain": new Blob([text], { type: "text/plain" }),
+			"text/html": new Blob([a.outerHTML], { type: "text/html" })
+		})]);
+	} else {
+		navigator.clipboard.writeText(text);
+	}
 }
 
 /**
@@ -617,23 +613,23 @@ function updatePerformance(performance) {
 	const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
 	const load = navigation.loadEventStart - start;
 	const aload = document.getElementById("load");
-	aload.title = outputtime(load);
+	aload.title = outputmsec(load);
 	aload.textContent = numberFormat6.format(load);
 
 	const ttfb = navigation.responseStart - start;
 	const attfb = document.getElementById("ttfb");
-	attfb.title = outputtime(ttfb);
+	attfb.title = outputmsec(ttfb);
 	attfb.textContent = numberFormat6.format(ttfb);
 
 	const fcp = performance.paint?.find((x) => x.name === "first-contentful-paint");
 	const apaint = document.getElementById("paint");
-	apaint.title = fcp ? outputtime(fcp.startTime) : "";
+	apaint.title = fcp ? outputmsec(fcp.startTime) : "";
 	apaint.textContent = fcp ? numberFormat6.format(fcp.startTime) : "None";
 
 	if (PerformanceObserver.supportedEntryTypes.includes("largest-contentful-paint")) {
 		const lcp = performance.lcp?.at(-1);
 		const alcp = document.getElementById("lcp");
-		alcp.title = lcp ? outputtime(lcp.startTime) : "";
+		alcp.title = lcp ? outputmsec(lcp.startTime) : "";
 		alcp.textContent = lcp ? numberFormat6.format(lcp.startTime) : "None";
 		document.querySelector(".lcp").classList.remove("hidden");
 	}
@@ -712,7 +708,7 @@ function updateTable(requests) {
 					const cell = row.insertCell();
 					const { requestSize } = request;
 					cell.title = `Upload/Request: ${outputunit(requestSize, false)}B${requestSize >= 1000 ? ` (${outputunit(requestSize, true)}B)` : ""}`;
-					cell.textContent = `${outputunit(requestSize, false)}B`
+					cell.textContent = `${outputunit(requestSize, false)}B`;
 					let aclass;
 					if (requestSize < 1024) {
 						aclass = "b";
@@ -753,7 +749,7 @@ function updateTable(requests) {
 						if (COLUMNS.expiration) {
 							const [certificate] = securityInfo.certificates;
 							const { start, end } = certificate.validity;
-							const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
+							const sec = Math.floor((end - details.timeStamp) / 1000);
 							const days = Math.floor(sec / 86400);
 							let title;
 							let color;
@@ -1131,7 +1127,7 @@ function updatePopup(tabId, tab) {
 		if (details.statusLine && securityInfo.state !== "insecure" && securityInfo.certificates.length) {
 			const [certificate] = securityInfo.certificates;
 			const { start, end } = certificate.validity;
-			const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
+			const sec = Math.floor((end - details.timeStamp) / 1000);
 			const { issuer } = certificate;
 			const aissuer = getissuer(issuer);
 			// console.log(issuer, aissuer);

@@ -126,7 +126,7 @@ browser.notifications.onClosed.addListener((notificationId) => {
  */
 function getImageData(emoji, size) {
 	// OffscreenCanvas is not yet enabled for Firefox: https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas#browser_compatibility
-	const canvas = window.OffscreenCanvas ? new OffscreenCanvas(size, size) : document.createElement("canvas");
+	const canvas = globalThis.OffscreenCanvas ? new OffscreenCanvas(size, size) : document.createElement("canvas");
 	const ctx = canvas.getContext("2d");
 
 	// https://bugzilla.mozilla.org/show_bug.cgi?id=1692791
@@ -141,8 +141,8 @@ function getImageData(emoji, size) {
 		ctx.fillText(emoji, size / 2, size * (IS_CHROME && !IS_ANDROID ? 37 / 64 : IS_LINUX ? 59 / 96 : 13 / 24));
 	} else {
 		let font_size = size / 2;
-		let width = 0;
-		let height = 0;
+		let width;
+		let height;
 		do {
 			++font_size;
 			ctx.font = `${font_size}px sans-serif`; // "Twemoji Mozilla"
@@ -304,7 +304,7 @@ async function updateIcon(tabId, tab) {
 		if (securityInfo.certificates.length) {
 			const [certificate] = securityInfo.certificates;
 			const { /* start, */ end } = certificate.validity;
-			const sec = Math.floor(end / 1000) - Math.floor(details.timeStamp / 1000);
+			const sec = Math.floor((end - details.timeStamp) / 1000);
 			const days = Math.floor(sec / 86400);
 			const { issuer } = certificate;
 			const aissuer = getissuer(issuer);
@@ -1070,7 +1070,9 @@ function sendSettings(details, tab) {
 			});
 		};
 
-		if (!intervalId) {
+		if (intervalId) {
+			args = [details, tab];
+		} else {
 			func(details, tab);
 			intervalId = setInterval(() => {
 				if (args) {
@@ -1078,8 +1080,6 @@ function sendSettings(details, tab) {
 					args = null;
 				}
 			}, 1000);
-		} else {
-			args = [details, tab];
 		}
 	}
 }

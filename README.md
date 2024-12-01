@@ -13,13 +13,14 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 * IP address(es)
 * HTTP status code and version
 * Load time, time to first byte, first paint and largest paint
-* Transfer size
+* Total download and upload size
 * \*Last modified
 * Certificate issuer and expiration date
 * SSL/TLS protocol
 * [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) (HSTS) status
 * Requests table with a row for each hostname/domain:
 	* Number of connections
+	* Download and upload size
 	* Icon(s) representing the classification by Firefox's [Enhanced Tracking Protection](https://support.mozilla.org/kb/enhanced-tracking-protection-firefox-desktop) (ETP) feature
 	* Icon representing the security state
 	* Days left until certificate expiration
