@@ -252,7 +252,7 @@ async function updateIcon(tabId, tab) {
 			}
 		}
 	} else if (settings.icon === 6) {
-		icon = details.fromCache ? icons[3] : icons[2];
+		icon = details.fromCache ? icons.globe_with_meridians : icons.black_question_mark_ornament;
 	}
 
 	if (settings.GeoDB) {
@@ -274,22 +274,22 @@ async function updateIcon(tabId, tab) {
 					text = country;
 					backgroundColor = settings.color;
 				} else {
-					icon = icons[2];
+					icon = icons.black_question_mark_ornament;
 				}
 			}
 		} else if (settings.icon === 1) {
-			icon = details.fromCache ? icons[3] : icons[2];
+			icon = details.fromCache ? icons.globe_with_meridians : icons.black_question_mark_ornament;
 		}
 	} else if (settings.icon === 1) {
 		title.unshift("Error: Geolocation database disabled");
-		icon = certificateIcons[3];
+		icon = certificateIcons.cross_mark;
 	}
 
 	let state = "";
 	if (securityInfo.state === "insecure") {
 		state = "Insecure";
 		if (settings.icon === 2 || settings.icon === 3) {
-			icon = certificateIcons[0];
+			icon = certificateIcons.open_lock;
 		}
 	} else if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
 		state = getmessage(securityInfo);
@@ -320,14 +320,14 @@ async function updateIcon(tabId, tab) {
 			if (settings.icon === 2) {
 				if (sec > 0) {
 					if (days > settings.warndays) {
-						icon = certificateIcons[1];
+						icon = certificateIcons.lock;
 						backgroundColor = "green";
 					} else {
-						icon = certificateIcons[2];
+						icon = certificateIcons.warning_sign;
 						backgroundColor = "yellow";
 					}
 				} else {
-					icon = certificateIcons[3];
+					icon = certificateIcons.cross_mark;
 					backgroundColor = "red";
 				}
 				text = sec > 0 && days === 0 ? `< ${numberFormat.format(1)}` : numberFormat.format(days);
@@ -336,7 +336,7 @@ async function updateIcon(tabId, tab) {
 				if (version.startsWith("TLSv")) {
 					const [major, minor] = version.slice("TLSv".length).split(".").map((x) => Number.parseInt(x, 10));
 					if (major === 1) {
-						icon = minor < digitIcons.length ? digitIcons[minor] : icons[2];
+						icon = minor < digitIcons.length ? digitIcons[minor] : icons.black_question_mark_ornament;
 						if (minor === 0 || minor === 1) {
 							backgroundColor = "red";
 						} else if (minor === 2) {
@@ -345,12 +345,12 @@ async function updateIcon(tabId, tab) {
 							backgroundColor = "green";
 						}
 					} else if (major > 1) {
-						icon = icons[2];
+						icon = icons.black_question_mark_ornament;
 						backgroundColor = settings.color;
 					}
 					text = version.slice("TLSv".length);
 				} else {
-					icon = icons[2];
+					icon = icons.black_question_mark_ornament;
 					text = version;
 					backgroundColor = settings.color;
 				}
@@ -358,7 +358,7 @@ async function updateIcon(tabId, tab) {
 		}
 		if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
 			if (settings.icon === 2 || settings.icon === 3) {
-				icon = certificateIcons[3];
+				icon = certificateIcons.cross_mark;
 				backgroundColor = "red";
 			}
 		}
@@ -385,17 +385,17 @@ async function updateIcon(tabId, tab) {
 		case 4: {
 			const { statusCode } = details;
 			if (statusCode >= 100 && statusCode < 200) {
-				icon = statusIcons[0];
+				icon = statusIcons.large_blue_square;
 				backgroundColor = "blue";
 			} else if (statusCode >= 200 && statusCode < 300) {
-				icon = statusIcons[1];
+				icon = statusIcons.large_green_square;
 				backgroundColor = "green";
 			} else if (statusCode >= 300 && statusCode < 400) {
-				icon = statusIcons[2];
+				icon = statusIcons.large_yellow_square;
 				backgroundColor = "yellow";
 			} else {
 				// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
-				icon = statusCode === 418 ? statusIcons[4] : statusIcons[3];
+				icon = statusCode === 418 ? statusIcons.teapot : statusIcons.large_red_square;
 				backgroundColor = "red";
 			}
 			text = statusCode.toString();
@@ -409,7 +409,7 @@ async function updateIcon(tabId, tab) {
 			if (regexResult) {
 				const [, version] = regexResult;
 				const [major, minor] = version.split(".").map((x) => Number.parseInt(x, 10));
-				icon = major < digitIcons.length ? digitIcons[major] : icons[2];
+				icon = major < digitIcons.length ? digitIcons[major] : icons.black_question_mark_ornament;
 				switch (major) {
 					case 0:
 						backgroundColor = "red";
@@ -426,7 +426,7 @@ async function updateIcon(tabId, tab) {
 				}
 				text = version;
 			} else {
-				icon = icons[2];
+				icon = icons.black_question_mark_ornament;
 				text = details.statusLine;
 				backgroundColor = settings.color;
 			}
@@ -438,13 +438,13 @@ async function updateIcon(tabId, tab) {
 				const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
 				const load = navigation.loadEventStart - start;
 				if (load <= 2500) {
-					icon = statusIcons[1];
+					icon = statusIcons.large_green_square;
 					backgroundColor = "green";
 				} else if (load <= 4000) {
-					icon = statusIcons[2];
+					icon = statusIcons.large_yellow_square;
 					backgroundColor = "yellow";
 				} else {
-					icon = statusIcons[3];
+					icon = statusIcons.large_red_square;
 					backgroundColor = "red";
 				}
 				text = numberFormat.format(load);
@@ -454,13 +454,13 @@ async function updateIcon(tabId, tab) {
 			if (tab.performance?.lcp) {
 				const lcp = tab.performance.lcp.at(-1);
 				if (lcp.startTime <= 2500) {
-					icon = statusIcons[1];
+					icon = statusIcons.large_green_square;
 					backgroundColor = "green";
 				} else if (lcp.startTime <= 4000) {
-					icon = statusIcons[2];
+					icon = statusIcons.large_yellow_square;
 					backgroundColor = "yellow";
 				} else {
-					icon = statusIcons[3];
+					icon = statusIcons.large_red_square;
 					backgroundColor = "red";
 				}
 				text = numberFormat.format(lcp.startTime);
@@ -504,28 +504,28 @@ async function updateActiveTab(details) {
 								responseSize: 0
 							};
 							tabs.set(details.tabId, tab);
-							// certificateIcons[5]
-							setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page${title}`, null, null);
+							// certificateIcons.shield
+							setIcon(details.tabId, icons.information_source, `${TITLE}  \nAccess denied for this “${aurl.protocol}” page${title}`, null, null);
 							console.debug("Access denied", aurl.protocol, aurl.origin, url.origin);
 						}
 					}
 				} else if (tab.error) {
-					setIcon(details.tabId, icons[1], `${TITLE}  \nError occurred for this page: ${tab.error}`, null, null);
+					setIcon(details.tabId, icons.information_source, `${TITLE}  \nError occurred for this page: ${tab.error}`, null, null);
 					console.debug("Error occurred", aurl.protocol, aurl.origin, tab.error);
 				} else if (tab.blocked) {
-					setIcon(details.tabId, certificateIcons[5], `${TITLE}  \nThe browser or another add-on has blocked this page`, null, null);
+					setIcon(details.tabId, certificateIcons.shield, `${TITLE}  \nThe browser or another add-on has blocked this page`, null, null);
 					console.debug("Blocked", aurl.protocol, aurl.origin);
 				} else {
-					setIcon(details.tabId, tab.details ? icons[0] : icons[1], `${TITLE}  \n${tab.details ? "Waiting for connection to complete" : "Unavailable or Access denied for this page"}${title}`, null, null);
+					setIcon(details.tabId, tab.details ? icons.jigsaw_puzzle_piece : icons.information_source, `${TITLE}  \n${tab.details ? "Waiting for connection to complete" : "Unavailable or Access denied for this page"}${title}`, null, null);
 					console.debug(tab.details ? "Waiting" : "Unavailable or Access denied", aurl.protocol, aurl.origin);
 				}
 			} else {
-				setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this “${aurl.protocol}” page${title}`, null, null);
+				setIcon(details.tabId, icons.jigsaw_puzzle_piece, `${TITLE}  \nUnavailable for this “${aurl.protocol}” page${title}`, null, null);
 				// console.log(`Error: ${details.tabId}`, changeInfo.url);
 				console.debug("Unavailable", aurl.protocol, aurl.origin);
 			}
 		} else {
-			setIcon(details.tabId, icons[0], `${TITLE}  \nUnavailable for this page`, null, null);
+			setIcon(details.tabId, icons.jigsaw_puzzle_piece, `${TITLE}  \nUnavailable for this page`, null, null);
 		}
 	}
 }
@@ -562,8 +562,8 @@ function beforeRequest(details) {
 				requestSize: 0,
 				responseSize: 0
 			});
-			// certificateIcons[5]
-			setIcon(details.tabId, icons[1], `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
+			// certificateIcons.shield
+			setIcon(details.tabId, icons.information_source, `${TITLE}  \nAccess denied for this “${aurl.protocol}” page`, null, null);
 			console.debug("Access denied", details.tabId, aurl.origin);
 		}
 
@@ -944,7 +944,7 @@ function parsePSL(PSL) {
  * @returns {Promise<void>}
  */
 async function getGeoLoc(date) {
-	setIcon(null, icons[7], `${TITLE}  \nUpdating geolocation databases`, null, null);
+	setIcon(null, icons.downwards_black_arrow, `${TITLE}  \nUpdating geolocation databases`, null, null);
 
 	const message = {
 		type: WORKER,
@@ -1171,7 +1171,7 @@ function setSettings(asettings) {
 		if (GeoDB !== settings.GeoDB) {
 			settings.GeoDB = GeoDB;
 
-			setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
+			setIcon(null, icons.hourglass_with_flowing_sand, `${TITLE}  \nProcessing geolocation databases`, null, null);
 
 			if (!worker) {
 				worker = new Worker("worker.js", { type: "module" });
@@ -1185,7 +1185,7 @@ function setSettings(asettings) {
 							notification(message.title, message.message, message.date);
 							break;
 						case WORKER:
-							setIcon(null, icons[0], null, null, null);
+							setIcon(null, icons.jigsaw_puzzle_piece, null, null, null);
 
 							for (const [tabId, tab] of tabs) {
 								if (tab.details?.statusLine) {
@@ -1194,7 +1194,7 @@ function setSettings(asettings) {
 							}
 							break;
 						case BACKGROUND:
-							setIcon(null, icons[6], `${TITLE}  \nProcessing geolocation databases`, null, null);
+							setIcon(null, icons.hourglass_with_flowing_sand, `${TITLE}  \nProcessing geolocation databases`, null, null);
 
 							browser.storage.local.set({ GEOIP: message.GEOIP });
 							break;
@@ -1259,10 +1259,10 @@ async function init() {
 	IS_ANDROID = platformInfo.os === "android";
 	IS_LINUX = platformInfo.os === "linux";
 
-	[icons, certificateIcons, statusIcons, digitIcons] = [emojis, certificateEmojis, statusEmojis, digitEmojis].map((emoji) => Object.freeze(emoji.map((e) => getIcons(e))));
+	[icons, certificateIcons, statusIcons, digitIcons] = [emojis, certificateEmojis, statusEmojis, digitEmojis].map((emoji) => Object.freeze(Object.fromEntries(Object.entries(emoji).map(([k, e]) => [k, getIcons(e)]))));
 
 	browser.browserAction.setIcon({
-		imageData: icons[0]
+		imageData: icons.jigsaw_puzzle_piece
 	});
 
 	browser.privacy.network.httpsOnlyMode.get({}).then((got) => {

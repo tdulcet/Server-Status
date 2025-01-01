@@ -8,9 +8,9 @@ export const NOTIFICATION = "notification";
 export const LOCATION = "location";
 export const WORKER = "worker";
 
-export const emojis = Object.freeze(["🧩", "ℹ️", "❓", "🌐", "✔️", "✖️", "⏳", "⬇️"]);
-export const certificateEmojis = Object.freeze(["🔓", "🔒", "⚠️", "❌", "⛔", "🛡️"]);
-export const statusEmojis = Object.freeze(["🟦", "🟩", "🟨", "🟥", /* "🔵", "🟢", "🟡", "🔴", */ "🫖"]);
+export const emojis = Object.freeze({ jigsaw_puzzle_piece: "🧩", information_source: "ℹ️", black_question_mark_ornament: "❓", globe_with_meridians: "🌐", heavy_check_mark: "✔️", heavy_multiplication_x: "✖️", hourglass_with_flowing_sand: "⏳", downwards_black_arrow: "⬇️" });
+export const certificateEmojis = Object.freeze({ open_lock: "🔓", lock: "🔒", warning_sign: "⚠️", cross_mark: "❌", no_entry: "⛔", shield: "🛡️" });
+export const statusEmojis = Object.freeze({ large_blue_square: "🟦", large_green_square: "🟩", large_yellow_square: "🟨", large_red_square: "🟥", large_blue_circle: "🔵", large_green_circle: "🟢", large_yellow_circle: "🟡", large_red_circle: "🔴", teapot: "🫖" });
 // const digitEmojis = Object.freeze([...[...new Array(10)].map((x, i) => `${i}️`), ..."⓿❶❷❸❹❺❻❼❽❾", ..."⓪①②③④⑤⑥⑦⑧⑨"]);
 export const digitEmojis = Object.freeze([...new Array(10)].map((_x, i) => `${i}️⃣`));
 

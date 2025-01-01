@@ -336,14 +336,14 @@ function handleError(error) {
 function status(statusCode) {
 	let emoji;
 	if (statusCode >= 100 && statusCode < 200) {
-		emoji = statusEmojis[0];
+		emoji = statusEmojis.large_blue_square;
 	} else if (statusCode >= 200 && statusCode < 300) {
-		emoji = statusEmojis[1];
+		emoji = statusEmojis.large_green_square;
 	} else if (statusCode >= 300 && statusCode < 400) {
-		emoji = statusEmojis[2];
+		emoji = statusEmojis.large_yellow_square;
 	} else {
 		// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
-		emoji = statusCode === 418 ? statusEmojis[4] : statusEmojis[3];
+		emoji = statusCode === 418 ? statusEmojis.teapot : statusEmojis.large_red_square;
 	}
 	return emoji;
 }
@@ -394,21 +394,21 @@ function getstate({ securityInfo, error }) {
 	let state = "";
 	if (securityInfo) {
 		if (securityInfo.state === "insecure") {
-			emoji.push(certificateEmojis[0]);
+			emoji.push(certificateEmojis.open_lock);
 			state = "Insecure";
 		} else if (securityInfo.state === "broken" || securityInfo.isUntrusted || securityInfo.isNotValidAtThisTime || securityInfo.isDomainMismatch) {
-			emoji.push(certificateEmojis[3]);
+			emoji.push(certificateEmojis.cross_mark);
 			state = getmessage(securityInfo);
 		} else if (securityInfo.state === "weak") {
-			emoji.push(certificateEmojis[1], certificateEmojis[2]);
+			emoji.push(certificateEmojis.lock, certificateEmojis.warning_sign);
 			state = `Weak${securityInfo.weaknessReasons ? ` (${securityInfo.weaknessReasons})` : ""}`;
 		} else if (securityInfo.state === "secure") {
-			emoji.push(certificateEmojis[1]);
+			emoji.push(certificateEmojis.lock);
 			state = "Secure";
 		}
 	}
 	if (error) {
-		emoji.push(certificateEmojis[4]);
+		emoji.push(certificateEmojis.no_entry);
 		if (state) {
 			state += `, error: ${error}`;
 		} else {
@@ -419,25 +419,6 @@ function getstate({ securityInfo, error }) {
 }
 
 /**
- * Count instances of values in array.
- *
- * @param {string[]} array
- * @returns {Object.<string, number>}
- */
-function count(array) {
-	return array.reduce((aarray, item) => {
-		if (item) {
-			if (item in aarray) {
-				++aarray[item];
-			} else {
-				aarray[item] = 1;
-			}
-		}
-		return aarray;
-	}, {});
-}
-
-/**
  * Output tooltip/title.
  *
  * @param {string[]} array
@@ -445,8 +426,8 @@ function count(array) {
  * @returns {string}
  */
 function outputtitle(array, str) {
-	const obj = count(array);
-	return Object.keys(obj).length > 1 ? Object.entries(obj).map(([key, value]) => `${numberFormat.format(value)}: ${key}`).join("\n") : str || Object.keys(obj)[0];
+	const obj = Object.groupBy(array, (value) => value);
+	return Object.keys(obj).length > 1 ? Object.entries(obj).map(([key, value]) => `${numberFormat.format(value.length)}: ${key}`).join("\n") : str || Object.keys(obj)[0];
 }
 
 /**
@@ -736,7 +717,7 @@ function updateTable(requests) {
 					const states = arequests.filter((x) => x.details.statusLine || x.error).map((obj) => getstate(obj));
 					const cell = row.insertCell();
 					cell.title = states.length ? outputtitle(states.map((obj) => obj.state)/* , state */) : blocked ? "Blocked by the browser or another add-on" : "Waiting for connection…";
-					cell.textContent = states.length ? Array.from(new Set(states.flatMap((obj) => obj.emoji))).join("") : blocked ? certificateEmojis[5] : emojis[6];
+					cell.textContent = states.length ? Array.from(new Set(states.flatMap((obj) => obj.emoji))).join("") : blocked ? certificateEmojis.shield : emojis.hourglass_with_flowing_sand;
 				}
 
 				const arequest = arequests.filter((x) => x.details.statusLine);
@@ -810,11 +791,11 @@ function updateTable(requests) {
 									cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
 								} else {
 									cell.title = `HSTS: ${securityInfo.hsts ? "Yes (Unable to find header)" : "No"}`;
-									cell.textContent = securityInfo.hsts ? emojis[4] : emojis[5];
+									cell.textContent = securityInfo.hsts ? emojis.heavy_check_mark : emojis.heavy_multiplication_x;
 								}
 							} else {
 								cell.title = `HSTS: ${securityInfo.hsts ? "Yes" : "No"}`;
-								cell.textContent = securityInfo.hsts ? emojis[4] : emojis[5];
+								cell.textContent = securityInfo.hsts ? emojis.heavy_check_mark : emojis.heavy_multiplication_x;
 							}
 						}
 					} else {
@@ -865,7 +846,7 @@ function updateTable(requests) {
 								span.classList.add(color);
 								span.textContent = version;
 							} else {
-								span.textContent = emojis[2];
+								span.textContent = emojis.black_question_mark_ornament;
 							}
 							return index ? ["\n", span] : [span];
 						}).flat());
@@ -906,16 +887,16 @@ function updateTable(requests) {
 
 								cell.title = outputtitle(infos.map((x) => x?.country ? outputlocation(x) : "Unknown Location"));
 								if (MAP) {
-									cell.replaceChildren(...Array.from(new Set(infos), (x, i) => x?.country ? [...i ? [" "] : [], countryCode(x.country), ...x.lat != null && x.lon != null ? map(x.lat, x.lon) : []] : [emojis[2]]).flat());
+									cell.replaceChildren(...Array.from(new Set(infos), (x, i) => x?.country ? [...i ? [" "] : [], countryCode(x.country), ...x.lat != null && x.lon != null ? map(x.lat, x.lon) : []] : [emojis.black_question_mark_ornament]).flat());
 								} else {
-									cell.textContent = Array.from(new Set(infos.map((x) => x?.country)), (x) => x ? countryCode(x) : emojis[2]).join("");
+									cell.textContent = Array.from(new Set(infos.map((x) => x?.country)), (x) => x ? countryCode(x) : emojis.black_question_mark_ornament).join("");
 								}
 							}));
 						} else if (details.fromCache) {
 							cell.textContent = "–";
 						} else {
 							cell.title = "Unknown Location";
-							cell.textContent = emojis[2];
+							cell.textContent = emojis.black_question_mark_ornament;
 						}
 					}
 				} else if (BLOCKED) {
@@ -1029,15 +1010,14 @@ function updatePopup(tabId, tab) {
 			if (DNS) {
 				browser.dns.resolve(url.hostname, ["offline"]).then((record) => {
 					// console.log(record);
-					const ipv4s = record.addresses.filter((value) => IPv4RE.test(value));
-					const ipv6s = record.addresses.filter((value) => IPv6RE.test(value));
+					const {4: ipv4s, 6: ipv6s} = Object.groupBy(record.addresses, (value) => IPv4RE.test(value) ? 4 : IPv6RE.test(value) ? 6 : null);
 					console.assert(ipv4s.length + ipv6s.length === record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
-					if (ipv4s.length) {
+					if (ipv4s) {
 						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, true, false);
 						document.querySelector(".ipv4").classList.remove("hidden");
 					}
-					if (ipv6s.length) {
+					if (ipv6s) {
 						document.getElementById("ipv6").innerHTML = outputaddresses(ipv6s, url.hostname, details.ip, false, true);
 						document.querySelector(".ipv6").classList.remove("hidden");
 					}
@@ -1060,7 +1040,7 @@ function updatePopup(tabId, tab) {
 		}
 	}
 
-	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis[1];
+	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis.information_source;
 	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Unavailable for this page");
 	document.getElementById("host").replaceChildren(outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
 	if (details.responseHeaders) {
@@ -1147,13 +1127,13 @@ function updatePopup(tabId, tab) {
 			if (sec > 0) {
 				const days = Math.floor(sec / 86400);
 				/* if (days > WARNDAYS) {
-					emoji = certificateEmojis[1];
+					emoji = certificateEmojis.lock;
 				} else { */
 				if (days <= WARNDAYS) {
-					emoji = certificateEmojis[2];
+					emoji = certificateEmojis.warning_sign;
 				}
 			} else {
-				emoji = certificateEmojis[3];
+				emoji = certificateEmojis.cross_mark;
 			}
 			const expiration = document.getElementById("expiration");
 			const date1 = new Date(start);
@@ -1180,13 +1160,13 @@ function updatePopup(tabId, tab) {
 					// console.log(header, aheader);
 					hsts.title = header.value;
 					// "preload" in aheader ? ", preloaded" : ""
-					hsts.textContent = `${emojis[4]}\u00A0Yes\u00A0\u00A0(${outputseconds(Number.parseInt(aheader["max-age"], 10))})`;
+					hsts.textContent = `${emojis.heavy_check_mark}\u00A0Yes\u00A0\u00A0(${outputseconds(Number.parseInt(aheader["max-age"], 10))})`;
 				} else {
-					hsts.textContent = securityInfo.hsts ? `${emojis[4]}\u00A0Yes` : `${certificateEmojis[3]}\u00A0No`;
+					hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 				}
 				// console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
-				hsts.textContent = securityInfo.hsts ? `${emojis[5]}\u00A0Yes` : `${certificateEmojis[3]}\u00A0No`;
+				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_multiplication_x}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 			}
 
 			for (const element of document.querySelectorAll(".certificate")) {
@@ -1194,7 +1174,7 @@ function updatePopup(tabId, tab) {
 			}
 		}
 	} else {
-		document.getElementById("state").textContent = blocked ? `${certificateEmojis[5]}\u00A0Blocked by the browser or another add-on` : `${emojis[6]}\u00A0Waiting for the connection to complete…`;
+		document.getElementById("state").textContent = blocked ? `${certificateEmojis.shield}\u00A0Blocked by the browser or another add-on` : `${emojis.hourglass_with_flowing_sand}\u00A0Waiting for the connection to complete…`;
 	}
 
 	document.querySelector(".no-data").classList.add("hidden");
@@ -1245,11 +1225,11 @@ function getstatus(tabId) {
 
 					updatePopup(tabId, message.tab);
 				} else {
-					data.innerText = `${emojis[1]} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS webpages.`;
+					data.innerText = `${emojis.information_source} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS webpages.`;
 					console.debug("Unavailable or Access denied", message);
 				}
 			} else {
-				data.textContent = `${emojis[1]} Unavailable for this page.`;
+				data.textContent = `${emojis.information_source} Unavailable for this page.`;
 				// console.log(`Error: ${tabId}`);
 				console.debug("Unavailable", message);
 			}
@@ -1328,7 +1308,7 @@ browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
 			data.textContent = "Loading…";
 			getstatus(tabId);
 		} else {
-			data.textContent = `${emojis[1]} Unavailable for this page.`;
+			data.textContent = `${emojis.information_source} Unavailable for this page.`;
 		}
 	}
 });
