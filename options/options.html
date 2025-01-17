@@ -499,8 +499,8 @@
 
 				<li>
 					<div class="line">
-						<label for="lookup">Show link to lookup IP addresses</label>
-						<select id="lookup" class="setting save-on-input" data-optiongroup="settings" name="lookup">
+						<label for="lookupip">Show link to lookup IP addresses</label>
+						<select id="lookupip" class="setting save-on-input" data-optiongroup="settings" name="lookupip">
 							<option value="0">None</option>
 							<option value="1">Flagfox/Geotool</option>
 							<option value="2">IP2Location</option>
@@ -509,6 +509,18 @@
 					</div>
 					<span class="line indent helper-text">Clicking the link shares the IP address and hostname with the
 						selected service.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<label for="lookuphost">Show link to lookup hostnames</label>
+						<select id="lookuphost" class="setting save-on-input" data-optiongroup="settings" name="lookuphost">
+							<option value="0">None</option>
+							<option value="1">BrowserLeaks</option>
+							<option value="2">Hosting Checker</option>
+						</select>
+					</div>
+					<span class="line indent helper-text">Clicking the link shares the hostname with the selected service.</span>
 				</li>
 
 				<li>

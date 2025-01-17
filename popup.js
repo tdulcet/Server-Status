@@ -17,7 +17,8 @@ let HTTPS = false;
 let SUFFIX = true;
 let GeoDB = 1;
 let MAP = 0;
-let LOOKUP = 0;
+let LOOKUPIP = 0;
+let LOOKUPHOST = 0;
 let DNS = true;
 let BLACKLIST = false;
 let SEND = true;
@@ -200,15 +201,15 @@ function map(latitude, longitude) {
 }
 
 /**
- * Output lookup link.
+ * Output IP address lookup link.
  *
  * @param {string} hostname
  * @param {string} address
  * @returns {Array.<HTMLElement|string>}
  */
-function lookup(hostname, address) {
+function lookupip(hostname, address) {
 	let url = "";
-	switch (LOOKUP) {
+	switch (LOOKUPIP) {
 		case 1:
 			// https://iplookup.flagfox.net/?ip={IPaddress}&host={domainName}
 			url = `https://iplookup.flagfox.net/?ip=${address}&host=${hostname}`;
@@ -223,6 +224,30 @@ function lookup(hostname, address) {
 	}
 	const a = createlink(url);
 	a.title = "Click to Lookup IP address";
+	a.textContent = "🔍";
+	a.classList.add("button");
+	return ["(", a, ")"];
+}
+
+/**
+ * Output hostname lookup link.
+ *
+ * @param {string} hostname
+ * @returns {Array.<HTMLElement|string>}
+ */
+function lookuphost(hostname) {
+	let url = "";
+	switch (LOOKUPHOST) {
+		case 1:
+			url = `https://browserleaks.com/ip/${hostname}`;
+			break;
+		case 2:
+			url = `https://hosting-checker.net/websites/${hostname}`;
+			break;
+		// No default
+	}
+	const a = createlink(url);
+	a.title = "Click to Lookup hostname";
 	a.textContent = "🔍";
 	a.classList.add("button");
 	return ["(", a, ")"];
@@ -254,8 +279,8 @@ function outputaddress(address, hostname, current, ipv4, ipv6) {
 	}
 	a.classList.add(ipv6 ? "ipv6" : "ipv4");
 	const text = [a];
-	if (LOOKUP) {
-		text.push("\u00A0", ...lookup(hostname, address));
+	if (LOOKUPIP) {
+		text.push("\u00A0", ...lookupip(hostname, address));
 	}
 	return text;
 }
@@ -286,7 +311,7 @@ function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
  * @param {string} protocol
  * @param {boolean} [ipv4]
  * @param {boolean} [ipv6]
- * @returns {HTMLAnchorElement}
+ * @returns {Array.<HTMLElement|string>}
  */
 function outputhost(hostname, protocol, ipv4, ipv6) {
 	ipv4 ??= IPv4RE.test(hostname);
@@ -307,14 +332,22 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 				a.textContent = `${subdomain}\u200B.`;
 			}
 			a.append(strong);
-			return a;
+			const text = [a];
+			if (LOOKUPHOST) {
+				text.push("\u00A0", ...lookuphost(hostname));
+			}
+			return text;
 		}
 		console.error("Error: Hostname has invalid suffix", hostname);
 	}
 
 	const a = createlink(`${protocol}//${hostname}`);
 	a.textContent = hostname;
-	return a;
+	const text = [a];
+	if (LOOKUPHOST && !ipv4 && !ipv6) {
+		text.push("\u00A0", ...lookuphost(hostname));
+	}
+	return text;
 }
 
 /**
@@ -859,7 +892,7 @@ function updateTable(requests) {
 					}
 
 					let cell = row.insertCell();
-					cell.append(outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
+					cell.append(...outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
 					cell.classList.add("host");
 
 					const addresses = Array.from(new Set(arequest.map((obj) => obj.details.ip).filter(Boolean)));
@@ -922,7 +955,7 @@ function updateTable(requests) {
 					}
 
 					let cell = row.insertCell();
-					cell.append(outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
+					cell.append(...outputhost(hostname, `http${HTTPS ? "s" : ""}:`));
 					cell.classList.add("host");
 
 					cell = row.insertCell();
@@ -1042,7 +1075,7 @@ function updatePopup(tabId, tab) {
 
 	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis.information_source;
 	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Unavailable for this page");
-	document.getElementById("host").replaceChildren(outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
+	document.getElementById("host").replaceChildren(...outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
 	if (details.responseHeaders) {
 		// console.log(details.responseHeaders);
 		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "server");
@@ -1218,7 +1251,8 @@ function getstatus(tabId) {
 						exceptions,
 						GeoDB,
 						MAP,
-						LOOKUP,
+						LOOKUPIP,
+						LOOKUPHOST,
 						SEND,
 						COLUMNS
 					} = message);
@@ -1276,7 +1310,8 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				SUFFIX,
 				GeoDB,
 				MAP,
-				LOOKUP,
+				LOOKUPIP,
+				LOOKUPHOST,
 				SEND
 			} = message);
 			// console.log(message);

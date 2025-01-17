@@ -27,7 +27,8 @@ const defaultSettings = {
 		updateidle: true,
 		idle: 60, // Seconds
 		map: "0",
-		lookup: "0",
+		lookupip: "0",
+		lookuphost: "0",
 		suffix: true,
 		https: false,
 		blacklist: false,

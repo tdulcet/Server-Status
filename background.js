@@ -36,7 +36,8 @@ const settings = {
 	updateidle: null,
 	idle: null, // Seconds
 	map: null,
-	lookup: null,
+	lookupip: null,
+	lookuphost: null,
 	suffix: null,
 	https: null,
 	blacklist: null,
@@ -1053,7 +1054,8 @@ function sendSettings(details, tab) {
 				SUFFIX: settings.suffix,
 				GeoDB: settings.GeoDB,
 				MAP: settings.map,
-				LOOKUP: settings.lookup,
+				LOOKUPIP: settings.lookupip,
+				LOOKUPHOST: settings.lookuphost,
 				SEND: settings.send,
 				details,
 				tab
@@ -1102,7 +1104,8 @@ function setSettings(asettings) {
 	settings.updateidle = asettings.updateidle;
 	settings.idle = asettings.idle;
 	settings.map = Number.parseInt(asettings.map, 10);
-	settings.lookup = Number.parseInt(asettings.lookup, 10);
+	settings.lookupip = Number.parseInt(asettings.lookupip, 10);
+	settings.lookuphost = Number.parseInt(asettings.lookuphost, 10);
 	settings.icon = Number.parseInt(asettings.icon, 10);
 	settings.badge = asettings.badge;
 	settings.dns = asettings.dns;
@@ -1301,7 +1304,8 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				exceptions,
 				GeoDB: settings.GeoDB,
 				MAP: settings.map,
-				LOOKUP: settings.lookup,
+				LOOKUPIP: settings.lookupip,
+				LOOKUPHOST: settings.lookuphost,
 				SEND: settings.send,
 				COLUMNS: columns,
 				tab
