@@ -41,8 +41,8 @@ let IPv6BLACKLISTS = [];
 
 let pasteSymbol = null;
 
-let suffixes = null;
-let exceptions = null;
+let suffixes_pattern = null;
+let exceptions_pattern = null;
 
 let timeoutID = null;
 let tabId = null;
@@ -77,21 +77,21 @@ function notification(title, message) {
  */
 function outputduration(sec) {
 	// console.log(now);
-	const d = Math.floor(sec / 86400);
-	const h = Math.floor(sec % 86400 / 3600);
-	const m = Math.floor(sec % 3600 / 60);
-	const s = sec % 60;
+	const days = Math.floor(sec / 86400);
+	const hours = Math.floor(sec % 86400 / 3600);
+	const minutes = Math.floor(sec % 3600 / 60);
+	const seconds = sec % 60;
 	let text = "";
-	if (d) {
-		text += `${numberFormat1.format(d)} `;
+	if (days) {
+		text += `${numberFormat1.format(days)} `;
 	}
-	if (d || h) {
-		text += `${numberFormat2.format(h)} `;
+	if (days || hours) {
+		text += `${numberFormat2.format(hours)} `;
 	}
-	if (d || h || m) {
-		text += `${numberFormat3.format(m)} `;
+	if (days || hours || minutes) {
+		text += `${numberFormat3.format(minutes)} `;
 	}
-	text += numberFormat4.format(s);
+	text += numberFormat4.format(seconds);
 	return text;
 }
 
@@ -143,13 +143,13 @@ function timerTick(time) {
  * @returns {string}
  */
 function outputmsec(msec) {
-	const s = Math.floor(msec / 1000);
-	const ms = msec % 1000;
+	const seconds = Math.floor(msec / 1000);
+	const milliseconds = msec % 1000;
 	let text = "";
-	if (s) {
-		text += `${numberFormat4.format(s)} `;
+	if (seconds) {
+		text += `${numberFormat4.format(seconds)} `;
 	}
-	text += numberFormat5.format(ms);
+	text += numberFormat5.format(milliseconds);
 	return text;
 }
 
@@ -317,11 +317,11 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 	ipv4 ??= IPv4RE.test(hostname);
 	ipv6 ??= aIPv6RE.test(hostname);
 
-	if (SUFFIX && suffixes && !ipv4 && !ipv6) {
-		const regexResult = suffixes.exec(hostname);
-		const aregexResult = exceptions.exec(hostname);
+	if (SUFFIX && suffixes_pattern && !ipv4 && !ipv6) {
+		const suffixResult = suffixes_pattern.exec(hostname);
+		const exceptionResult = exceptions_pattern.exec(hostname);
 		const labels = hostname.split(".");
-		const alabels = aregexResult ? aregexResult[1].split(".").slice(1) : regexResult ? regexResult[1].split(".") : labels.slice(-1);
+		const alabels = exceptionResult ? exceptionResult[1].split(".").slice(1) : suffixResult ? suffixResult[1].split(".") : labels.slice(-1);
 		if (labels.length > alabels.length) {
 			const domain = labels.slice(-(alabels.length + 1)).join("\u200B.");
 			const subdomain = labels.slice(0, -(alabels.length + 1)).join("\u200B.");
@@ -785,7 +785,7 @@ function updateTable(requests) {
 
 						if (COLUMNS.tlsversion) {
 							const cell = row.insertCell();
-							cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}${obj.secretKeyLength ? `, ${obj.secretKeyLength} bits` : ""}, ${obj.cipherSuite}`));
+							cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}, ${obj.secretKeyLength} bits, ${obj.cipherSuite}`));
 							cell.append(...Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion)), (version, index) => {
 								const span = document.createElement("span");
 								if (version?.startsWith("TLSv")) {
@@ -1183,7 +1183,7 @@ function updatePopup(tabId, tab) {
 
 			const protocol = document.getElementById("protocol");
 			protocol.title = securityInfo.cipherSuite;
-			protocol.textContent = securityInfo.protocolVersion + (securityInfo.secretKeyLength ? `, ${securityInfo.secretKeyLength} bit keys` : "");
+			protocol.textContent = `${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys`;
 			const hsts = document.getElementById("hsts");
 			if (details.responseHeaders) {
 				// console.log(details.responseHeaders);
@@ -1247,8 +1247,8 @@ function getstatus(tabId) {
 						IPv4BLACKLISTS,
 						IPv6BLACKLISTS,
 						SUFFIX,
-						suffixes,
-						exceptions,
+						suffixes_pattern,
+						exceptions_pattern,
 						GeoDB,
 						MAP,
 						LOOKUPIP,

@@ -63,6 +63,9 @@ const tabs = new Map();
 
 const notifications = new Map();
 
+// Leaf node
+const LEAF = Symbol("leaf");
+
 let IS_ANDROID = null;
 let IS_LINUX = null;
 
@@ -81,8 +84,8 @@ let worker = null;
 
 let date = null;
 
-let suffixes = null;
-let exceptions = null;
+let suffixes_pattern = null;
+let exceptions_pattern = null;
 
 /**
  * Create notification.
@@ -316,7 +319,7 @@ async function updateIcon(tabId, tab) {
 			// Certificate issuer
 			title.push(`𝗜𝘀𝘀𝘂𝗲𝗿:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} (${aissuer.C}) ${countryCode(aissuer.C)}` : ""}`);
 			// SSL/TLS protocol
-			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}${securityInfo.secretKeyLength ? `, ${securityInfo.secretKeyLength} bit keys` : ""}`);
+			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys`);
 
 			if (settings.icon === 2) {
 				if (sec > 0) {
@@ -846,10 +849,9 @@ function createRegEx(tree) {
 	const alternatives = [];
 	const characterClass = [];
 
-	for (const char in tree) {
+	for (const [char, atree] of Object.entries(tree)) {
 		if (char) {
-			const atree = tree[char];
-			if ("" in atree && Object.keys(atree).length === 1) {
+			if (LEAF in atree && Object.keys(atree).length === 0) {
 				characterClass.push(char);
 			} else {
 				const recurse = createRegEx(atree);
@@ -864,7 +866,7 @@ function createRegEx(tree) {
 
 	let result = alternatives.length === 1 ? alternatives[0] : `(?:${alternatives.join("|")})`;
 
-	if ("" in tree) {
+	if (LEAF in tree) {
 		if (characterClass.length || alternatives.length > 1) {
 			result += "?";
 		} else {
@@ -897,7 +899,7 @@ function createTree(arr) {
 		}
 
 		// Leaf node
-		temp[""] = true;
+		temp[LEAF] = true;
 	}
 
 	Object.freeze(tree);
@@ -912,8 +914,8 @@ function createTree(arr) {
  */
 function parsePSL(PSL) {
 	const start = performance.now();
-	suffixes = [];
-	exceptions = [];
+	const suffixes = [];
+	const exceptions = [];
 
 	for (const r of PSL) {
 		if (r.startsWith("!")) {
@@ -925,15 +927,15 @@ function parsePSL(PSL) {
 
 	// console.log(suffixes, exceptions);
 
-	suffixes = createTree(suffixes);
-	exceptions = createTree(exceptions);
+	const suffixes_re = createTree(suffixes);
+	const exceptions_re = createTree(exceptions);
 
-	console.log(suffixes, exceptions);
+	console.log(suffixes_re, exceptions_re);
 
-	suffixes = new RegExp(String.raw`(?:^|\.)(${suffixes})$`, "u");
-	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`, "u");
+	suffixes_pattern = new RegExp(String.raw`(?:^|\.)(${suffixes_re})$`, "u");
+	exceptions_pattern = new RegExp(String.raw`(?:^|\.)(${exceptions_re})$`, "u");
 
-	// console.log(suffixes, exceptions);
+	// console.log(suffixes_pattern, exceptions_pattern);
 	const end = performance.now();
 	console.log(`The PSL was parsed in ${end - start} ms.`);
 }
@@ -1300,8 +1302,8 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				IPv4BLACKLISTS: settings.ipv4blacklists,
 				IPv6BLACKLISTS: settings.ipv6blacklists,
 				SUFFIX: settings.suffix,
-				suffixes,
-				exceptions,
+				suffixes_pattern,
+				exceptions_pattern,
 				GeoDB: settings.GeoDB,
 				MAP: settings.map,
 				LOOKUPIP: settings.lookupip,

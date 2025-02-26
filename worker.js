@@ -32,15 +32,30 @@ function notification(title, message) {
 }
 
 /**
+ * Intern string.
+ *
+ * @param {string} str
+ * @param {Map<string, string>} internMap
+ * @returns {string}
+ */
+function internString(str, internMap) {
+	if (!internMap.has(str)) {
+		internMap.set(str, str);
+	}
+	return internMap.get(str);
+}
+
+/**
  * Get the geolocation database.
  *
  * @param {string} url
  * @param {4|6} v
+ * @param {Map<string, string>} internMap
  * @param {string} [cache]
  * @param {number} [retry]
  * @returns {Promise<[Array<number|bigint|string|null>[], string|null, number|null]>}
  */
-function agetGeoIP(url, v, cache, retry = 0) {
+function agetGeoIP(url, v, internMap, cache, retry = 0) {
 	const alabel = `${label}${v}`;
 	console.log(url);
 	const fetchInfo = {
@@ -56,7 +71,11 @@ function agetGeoIP(url, v, cache, retry = 0) {
 
 			console.timeLog(alabel);
 
-			let GEOIP = text.split("\n").filter((r) => r.length).map((r) => r.split("\t"));
+			let GEOIP = text.split("\n").filter((r) => r.length); // .map((r) => r.split("\t"));
+
+			for (const [i, row] of GEOIP.entries()) {
+				GEOIP[i] = row.split("\t");
+			}
 			// console.log(GEOIP);
 
 			console.timeLog(alabel);
@@ -68,16 +87,57 @@ function agetGeoIP(url, v, cache, retry = 0) {
 				case 3:
 				case 4:
 				case 5:
-					GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country] : ([start, end, country]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country]));
+					for (const row of GEOIP) {
+						const [start, end, country] = row;
+						if (v === 4) {
+							row[0] = Number.parseInt(start, 16);
+							row[1] = Number.parseInt(end, 16);
+						} else {
+							row[0] = BigInt(`0x${start}`);
+							row[1] = BigInt(`0x${end}`);
+						}
+						row[2] = internString(country, internMap);
+					}
 					break;
 				case 6:
 				case 7:
-					GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state1, city, lat, lon]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state1, city, lat, lon]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
+					for (const row of GEOIP) {
+						const [start, end, country, state1, city, lat, lon] = row;
+						if (v === 4) {
+							row[0] = Number.parseInt(start, 16);
+							row[1] = Number.parseInt(end, 16);
+						} else {
+							row[0] = BigInt(`0x${start}`);
+							row[1] = BigInt(`0x${end}`);
+						}
+						row[2] = internString(country, internMap);
+						row[3] = internString(state1, internMap);
+						row[4] = internString(city, internMap);
+						row[5] = lat ? Number.parseFloat(lat) : null;
+						row[6] = lon ? Number.parseFloat(lon) : null;
+					}
 					break;
 				case 8:
-					GEOIP = Object.freeze(GEOIP.map(v === 4 ? ([start, end, country, state2, state1, city, lat, lon]) => [Number.parseInt(start, 16), Number.parseInt(end, 16), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null] : ([start, end, country, state2, state1, city, lat, lon]) => [BigInt(`0x${start}`), BigInt(`0x${end}`), country, state2, state1, city, lat ? Number.parseFloat(lat) : null, lon ? Number.parseFloat(lon) : null]));
+					for (const row of GEOIP) {
+						const [start, end, country, state2, state1, city, lat, lon] = row;
+						if (v === 4) {
+							row[0] = Number.parseInt(start, 16);
+							row[1] = Number.parseInt(end, 16);
+						} else {
+							row[0] = BigInt(`0x${start}`);
+							row[1] = BigInt(`0x${end}`);
+						}
+						row[2] = internString(country, internMap);
+						row[3] = internString(state2, internMap);
+						row[4] = internString(state1, internMap);
+						row[5] = internString(city, internMap);
+						row[6] = lat ? Number.parseFloat(lat) : null;
+						row[7] = lon ? Number.parseFloat(lon) : null;
+					}
 					break;
 			}
+
+			GEOIP = Object.freeze(GEOIP);
 
 			console.timeLog(alabel);
 
@@ -100,7 +160,7 @@ function agetGeoIP(url, v, cache, retry = 0) {
 		console.error(error);
 		await delay((1 << retry) * 1000);
 
-		return agetGeoIP(url, v, cache, retry + 1);
+		return agetGeoIP(url, v, internMap, cache, retry + 1);
 	});
 }
 
@@ -172,7 +232,9 @@ async function getGeoLoc(date, languages, cache) {
 
 	const start = performance.now();
 
-	await agetGeoIP(url4, 4, cache).then((value) => Promise.all([value, agetGeoIP(url6, 6, cache)])).then(([[GeoIPv4, modified4, length4], [GeoIPv6, modified6, length6]]) => {
+	const internMap = new Map();
+
+	await agetGeoIP(url4, 4, internMap, cache).then((value) => Promise.all([value, agetGeoIP(url6, 6, internMap, cache)])).then(([[GeoIPv4, modified4, length4], [GeoIPv6, modified6, length6]]) => {
 		// https://bugzilla.mozilla.org/show_bug.cgi?id=1674342
 		// console.log(GeoIPv4, GeoIPv6, new Date(date));
 		console.log(GeoIPv4.length, GeoIPv6.length, new Date(date));
