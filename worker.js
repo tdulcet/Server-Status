@@ -144,7 +144,7 @@ function agetGeoIP(url, v, internMap, cache, retry = 0) {
 			const modified = response.headers.get("Last-Modified");
 			let length = response.headers.get("Content-Length");
 			length &&= Number.parseInt(length, 10);
-			console.log(Array.from(response.headers.entries()), modified, text.length, length);
+			// console.log(Array.from(response.headers.entries()), modified, text.length, length);
 
 			return [GEOIP, modified, length];
 		}
