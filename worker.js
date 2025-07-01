@@ -222,7 +222,7 @@ async function getGeoLoc(date, languages, cache) {
 	const url6 = `${url}${dir}/${file6}?inline=false`;
 
 	if (!cache) {
-		notification("⬇️ Updating geolocation databases", "Checking for updated IP geolocation databases.\nYour browser may briefly slowdown after the download while it is processing the databases.");
+		notification("⬇️ Updating geolocation databases", "Checking for updated IP geolocation databases.");
 	}
 
 	const label4 = `${label}4`;

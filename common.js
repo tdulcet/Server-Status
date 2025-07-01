@@ -3,6 +3,7 @@
 // communication type
 export const POPUP = "popup";
 export const CONTENT = "content";
+export const PERFORMANCE = "performance";
 export const BACKGROUND = "background";
 export const NOTIFICATION = "notification";
 export const LOCATION = "location";
