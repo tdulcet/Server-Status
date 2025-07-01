@@ -44,6 +44,7 @@ const defaultSettings = {
 		expiration: true,
 		tlsversion: true,
 		hsts: true,
+		ech: true,
 		httpversion: true,
 		httpstatus: true
 	}

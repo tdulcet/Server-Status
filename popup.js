@@ -31,6 +31,7 @@ let COLUMNS = {
 	expiration: true,
 	tlsversion: true,
 	hsts: true,
+	ech: true,
 	httpversion: true,
 	httpstatus: true
 };
@@ -831,6 +832,12 @@ function updateTable(requests) {
 								cell.textContent = securityInfo.hsts ? emojis.heavy_check_mark : emojis.heavy_multiplication_x;
 							}
 						}
+
+						if (COLUMNS.ech) {
+							const cell = row.insertCell();
+							cell.title = `ECH: ${securityInfo.usedEch ? "Yes" : "No"}`;
+							cell.textContent = securityInfo.usedEch ? emojis.heavy_check_mark : emojis.heavy_multiplication_x;
+						}
 					} else {
 						if (COLUMNS.expiration) {
 							const cell = row.insertCell();
@@ -841,6 +848,10 @@ function updateTable(requests) {
 							cell.textContent = "–";
 						}
 						if (COLUMNS.hsts) {
+							const cell = row.insertCell();
+							cell.textContent = "–";
+						}
+						if (COLUMNS.ech) {
 							const cell = row.insertCell();
 							cell.textContent = "–";
 						}
@@ -945,6 +956,10 @@ function updateTable(requests) {
 						const cell = row.insertCell();
 						cell.textContent = "–";
 					}
+					if (COLUMNS.ech) {
+						const cell = row.insertCell();
+						cell.textContent = "–";
+					}
 					if (COLUMNS.httpversion) {
 						const cell = row.insertCell();
 						cell.textContent = "–";
@@ -1020,10 +1035,10 @@ function updatePopup(tabId, tab) {
 			const ipv6 = details.ip && IPv6RE.test(details.ip);
 			if (details.ip) {
 				if (ipv4) {
-					document.getElementById("ipv4").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
+					document.getElementById("ipv4").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv4").classList.remove("hidden");
 				} else if (ipv6) {
-					document.getElementById("ipv6").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
+					document.getElementById("ipv6").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv6").classList.remove("hidden");
 				}
 			} else if (details.fromCache) {
@@ -1043,15 +1058,15 @@ function updatePopup(tabId, tab) {
 			if (DNS) {
 				browser.dns.resolve(url.hostname, ["offline"]).then((record) => {
 					// console.log(record);
-					const {4: ipv4s, 6: ipv6s} = Object.groupBy(record.addresses, (value) => IPv4RE.test(value) ? 4 : IPv6RE.test(value) ? 6 : null);
+					const { 4: ipv4s, 6: ipv6s } = Object.groupBy(record.addresses, (value) => IPv4RE.test(value) ? 4 : IPv6RE.test(value) ? 6 : null);
 					console.assert(ipv4s.length + ipv6s.length === record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
 					if (ipv4s) {
-						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, true, false);
+						document.getElementById("ipv4").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv4s, url.hostname, details.ip, true, false);
 						document.querySelector(".ipv4").classList.remove("hidden");
 					}
 					if (ipv6s) {
-						document.getElementById("ipv6").innerHTML = outputaddresses(ipv6s, url.hostname, details.ip, false, true);
+						document.getElementById("ipv6").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv6s, url.hostname, details.ip, false, true);
 						document.querySelector(".ipv6").classList.remove("hidden");
 					}
 					document.querySelector(".cache").classList.add("hidden");
@@ -1199,8 +1214,9 @@ function updatePopup(tabId, tab) {
 				}
 				// console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
-				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_multiplication_x}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
+				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 			}
+			document.getElementById("ech").textContent = securityInfo.usedEch ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 
 			for (const element of document.querySelectorAll(".certificate")) {
 				element.classList.remove("hidden");

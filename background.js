@@ -55,6 +55,7 @@ const columns = {
 	expiration: null,
 	tlsversion: null,
 	hsts: null,
+	ech: null,
 	httpversion: null,
 	httpstatus: null
 };
@@ -381,8 +382,8 @@ async function updateIcon(tabId, tab) {
 		} else {
 			atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
 		}
-		// HSTS
-		title.push(`𝗛𝗦𝗧𝗦:  ${atitle}`);
+		// HSTS, ECH
+		title.push(`𝗛𝗦𝗧𝗦:  ${atitle},  𝗘𝗖𝗛:  ${securityInfo.usedEch ? "✔ Yes" : "✖ No"}`);
 	}
 
 	switch (settings.icon) {
@@ -1125,6 +1126,7 @@ function setSettings(asettings) {
 	columns.expiration = asettings.expiration;
 	columns.tlsversion = asettings.tlsversion;
 	columns.hsts = asettings.hsts;
+	columns.ech = asettings.ech;
 	columns.httpversion = asettings.httpversion;
 	columns.httpstatus = asettings.httpstatus;
 
