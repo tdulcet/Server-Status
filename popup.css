@@ -78,3 +78,10 @@ td.highlight {
 td.right {
 	text-align: right;
 }
+
+.shorten {
+	max-width: 300px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

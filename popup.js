@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, CONTENT, LOCATION, emojis, certificateEmojis, statusEmojis, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat1, numberFormat2, numberFormat3, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4RE, IPv6, IPv6RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode } from "/common.js";
+import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, statusEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat1, numberFormat2, numberFormat3, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4RE, IPv6, IPv6RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode } from "/common.js";
 
 const { TAB_ID_NONE } = browser.tabs;
 
@@ -31,6 +31,7 @@ let COLUMNS = {
 	expiration: true,
 	tlsversion: true,
 	hsts: true,
+	ech: true,
 	httpversion: true,
 	httpstatus: true
 };
@@ -651,10 +652,10 @@ function updatePerformance(performance) {
 	/* const size = navigation.transferSize;
 	document.getElementById("size").textContent = size === 0 && navigation.decodedBodySize > 0 ? "Cached" : `${outputunit(size, false)}B${size >= 1000 ? ` (${outputunit(size, true)}B)` : ""}`;
 
-	for (const element of document.querySelectorAll(".content")) {
+	for (const element of document.querySelectorAll(".performance")) {
 		element.classList.remove("hidden");
 	} */
-	document.querySelector(".content").classList.remove("hidden");
+	document.querySelector(".performance").classList.remove("hidden");
 }
 
 /**
@@ -783,10 +784,10 @@ function updateTable(requests) {
 							cell.append(span);
 						}
 
-						if (COLUMNS.tlsversion) {
+						if (COLUMNS.tlsversion || COLUMNS.ech) {
 							const cell = row.insertCell();
-							cell.title = outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}, ${obj.secretKeyLength} bits, ${obj.cipherSuite}`));
-							cell.append(...Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion)), (version, index) => {
+							cell.title = `${COLUMNS.tlsversion ? outputtitle(arequest.map((obj) => obj.securityInfo).map((obj) => `${obj.protocolVersion}, ${obj.secretKeyLength} bits, ${obj.cipherSuite}`)) : ""}\n${COLUMNS.ech ? `ECH: ${securityInfo.usedEch ? "Yes" : "No"}` : ""}`;
+							cell.append(...COLUMNS.tlsversion ? Array.from(new Set(arequest.map((obj) => obj.securityInfo.protocolVersion)), (version, index) => {
 								const span = document.createElement("span");
 								if (version?.startsWith("TLSv")) {
 									const [major, minor] = version.slice("TLSv".length).split(".").map((x) => Number.parseInt(x, 10));
@@ -808,7 +809,7 @@ function updateTable(requests) {
 									span.textContent = version;
 								}
 								return index ? ["\n", span] : [span];
-							}).flat());
+							}).flat() : [], ...COLUMNS.ech ? [securityInfo.usedEch ? emojis.heavy_check_mark : emojis.heavy_multiplication_x] : []);
 						}
 
 						if (COLUMNS.hsts) {
@@ -818,10 +819,15 @@ function updateTable(requests) {
 								// const header = arequest.find((obj) => obj.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security"))?.details.responseHeaders.find((e) => e.name.toLowerCase() === "strict-transport-security");
 								if (header) {
 									const aheader = getHSTS(header.value);
-									const sec = Number.parseInt(aheader["max-age"], 10);
-									const days = Math.floor(sec / 86400);
-									cell.title = `HSTS: Yes (${outputseconds(sec)})`;
-									cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+									if ("max-age" in aheader) {
+										const sec = Number.parseInt(aheader["max-age"], 10);
+										const days = Math.floor(sec / 86400);
+										cell.title = `HSTS: Yes (${outputseconds(sec)})`;
+										cell.textContent = sec > 0 && days === 0 ? `<${numberFormat.format(1)}` : numberFormat.format(days);
+									} else {
+										cell.title = "HSTS: Bad header";
+										cell.textContent = certificateEmojis.warning_sign;
+									}
 								} else {
 									cell.title = `HSTS: ${securityInfo.hsts ? "Yes (Unable to find header)" : "No"}`;
 									cell.textContent = securityInfo.hsts ? emojis.heavy_check_mark : emojis.heavy_multiplication_x;
@@ -836,7 +842,7 @@ function updateTable(requests) {
 							const cell = row.insertCell();
 							cell.textContent = "–";
 						}
-						if (COLUMNS.tlsversion) {
+						if (COLUMNS.tlsversion || COLUMNS.ech) {
 							const cell = row.insertCell();
 							cell.textContent = "–";
 						}
@@ -846,11 +852,9 @@ function updateTable(requests) {
 						}
 					}
 
-					const title = (COLUMNS.httpversion || COLUMNS.httpstatus) && outputtitle(arequest.map((obj) => obj.details.statusLine), details.statusLine);
-
 					if (COLUMNS.httpversion) {
 						const cell = row.insertCell();
-						cell.title = title;
+						cell.title = outputtitle(arequest.map((obj) => obj.details.statusLine), details.statusLine);
 						// Get HTTP version
 						const re = /^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: .*)?$/u;
 						cell.append(...Array.from(new Set(arequest.map((obj) => {
@@ -887,7 +891,7 @@ function updateTable(requests) {
 
 					if (COLUMNS.httpstatus) {
 						const cell = row.insertCell();
-						cell.title = title;
+						cell.title = outputtitle(arequest.map((obj) => obj.details.statusLine + (obj.details.statusCode in status_codes ? `  (${status_codes[obj.details.statusCode]})` : "")), details.statusLine + (details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : ""));
 						cell.textContent = Array.from(new Set(arequest.map((obj) => obj.details.statusCode)), (key) => status(key)).join("");
 					}
 
@@ -937,7 +941,7 @@ function updateTable(requests) {
 						const cell = row.insertCell();
 						cell.textContent = "–";
 					}
-					if (COLUMNS.tlsversion) {
+					if (COLUMNS.tlsversion || COLUMNS.ech) {
 						const cell = row.insertCell();
 						cell.textContent = "–";
 					}
@@ -995,14 +999,50 @@ function updatePopup(tabId, tab) {
 	const { details, securityInfo, requests, error, blocked } = tab;
 	// console.log(tabId, details, securityInfo);
 
-	document.getElementById("content").textContent = "Loading…";
+	document.getElementById("performance").textContent = "Loading…";
 
 	browser.tabs.sendMessage(tabId, { type: CONTENT }).then((message) => {
 		if (message.type === CONTENT) {
+			if (message.authors) {
+				document.getElementById("authors").textContent = formatter2.format(message.authors);
+				document.querySelector(".authors").classList.remove("hidden");
+			}
+			if (message.creators) {
+				document.getElementById("creators").textContent = formatter2.format(message.creators);
+				document.querySelector(".creators").classList.remove("hidden");
+			}
+			if (message.publishers) {
+				document.getElementById("publishers").textContent = formatter2.format(message.publishers);
+				document.querySelector(".publishers").classList.remove("hidden");
+			}
+			if (message.generators) {
+				document.getElementById("generators").textContent = formatter2.format(message.generators);
+				document.querySelector(".generators").classList.remove("hidden");
+			}
+			if (message.descriptions) {
+				const descriptions = document.getElementById("descriptions");
+				descriptions.title = message.descriptions.join("\n");
+				descriptions.innerHTML = formatter2.format(message.descriptions.map((description) => {
+					const q = document.createElement("q");
+					q.textContent = description;
+					return q.outerHTML;
+				}));
+				document.querySelector(".descriptions").classList.remove("hidden");
+			}
+
+			if (message.authors || message.creators || message.publishers || message.generators || message.descriptions) {
+				document.querySelector(".info").classList.remove("hidden");
+			}
+			// console.log(message);
+		}
+	}).catch(handleError);
+
+	browser.tabs.sendMessage(tabId, { type: PERFORMANCE }).then((message) => {
+		if (message.type === PERFORMANCE) {
 			// console.log(message);
 		}
 	}).catch(handleError).finally(() => {
-		document.querySelector(".no-content").classList.add("hidden");
+		document.querySelector(".no-performance").classList.add("hidden");
 	});
 	if (tab.performance) {
 		updatePerformance(tab.performance);
@@ -1020,10 +1060,10 @@ function updatePopup(tabId, tab) {
 			const ipv6 = details.ip && IPv6RE.test(details.ip);
 			if (details.ip) {
 				if (ipv4) {
-					document.getElementById("ipv4").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
+					document.getElementById("ipv4").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv4").classList.remove("hidden");
 				} else if (ipv6) {
-					document.getElementById("ipv6").replaceChildren(...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
+					document.getElementById("ipv6").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
 					document.querySelector(".ipv6").classList.remove("hidden");
 				}
 			} else if (details.fromCache) {
@@ -1043,15 +1083,15 @@ function updatePopup(tabId, tab) {
 			if (DNS) {
 				browser.dns.resolve(url.hostname, ["offline"]).then((record) => {
 					// console.log(record);
-					const {4: ipv4s, 6: ipv6s} = Object.groupBy(record.addresses, (value) => IPv4RE.test(value) ? 4 : IPv6RE.test(value) ? 6 : null);
+					const { 4: ipv4s, 6: ipv6s } = Object.groupBy(record.addresses, (value) => IPv4RE.test(value) ? 4 : IPv6RE.test(value) ? 6 : null);
 					console.assert(ipv4s.length + ipv6s.length === record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
 					if (ipv4s) {
-						document.getElementById("ipv4").innerHTML = outputaddresses(ipv4s, url.hostname, details.ip, true, false);
+						document.getElementById("ipv4").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv4s, url.hostname, details.ip, true, false);
 						document.querySelector(".ipv4").classList.remove("hidden");
 					}
 					if (ipv6s) {
-						document.getElementById("ipv6").innerHTML = outputaddresses(ipv6s, url.hostname, details.ip, false, true);
+						document.getElementById("ipv6").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv6s, url.hostname, details.ip, false, true);
 						document.querySelector(".ipv6").classList.remove("hidden");
 					}
 					document.querySelector(".cache").classList.add("hidden");
@@ -1074,7 +1114,7 @@ function updatePopup(tabId, tab) {
 	}
 
 	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis.information_source;
-	document.getElementById("line").textContent = details.statusLine || (error ? "Error occurred for this page" : "Unavailable for this page");
+	document.getElementById("line").textContent = details.statusLine ? details.statusLine + (details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : "") : error ? "Error occurred for this page" : "Unavailable for this page";
 	document.getElementById("host").replaceChildren(...outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
 	if (details.responseHeaders) {
 		// console.log(details.responseHeaders);
@@ -1184,6 +1224,7 @@ function updatePopup(tabId, tab) {
 			const protocol = document.getElementById("protocol");
 			protocol.title = securityInfo.cipherSuite;
 			protocol.textContent = `${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys`;
+			document.getElementById("ech").textContent = securityInfo.usedEch ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 			const hsts = document.getElementById("hsts");
 			if (details.responseHeaders) {
 				// console.log(details.responseHeaders);
@@ -1193,13 +1234,13 @@ function updatePopup(tabId, tab) {
 					// console.log(header, aheader);
 					hsts.title = header.value;
 					// "preload" in aheader ? ", preloaded" : ""
-					hsts.textContent = `${emojis.heavy_check_mark}\u00A0Yes\u00A0\u00A0(${outputseconds(Number.parseInt(aheader["max-age"], 10))})`;
+					hsts.textContent = "max-age" in aheader ? `${emojis.heavy_check_mark}\u00A0Yes\u00A0\u00A0(${outputseconds(Number.parseInt(aheader["max-age"], 10))})` : `${certificateEmojis.warning_sign}\u00A0Bad header`;
 				} else {
 					hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 				}
 				// console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
-				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_multiplication_x}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
+				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
 			}
 
 			for (const element of document.querySelectorAll(".certificate")) {
@@ -1325,7 +1366,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 
 			return Promise.resolve();
 		}
-	} else if (message.type === CONTENT) {
+	} else if (message.type === PERFORMANCE) {
 		if (sender.tab.id === tabId) {
 			updatePerformance(message.performance);
 			// console.log(message);

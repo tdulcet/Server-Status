@@ -17,6 +17,7 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 * \*Last modified
 * Certificate issuer and expiration date
 * SSL/TLS protocol
+* [Encrypted Client Hello](https://en.wikipedia.org/wiki/Server_Name_Indication#Encrypted_Client_Hello) (ECH) status
 * [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) (HSTS) status
 * Requests table with a row for each hostname/domain:
 	* Number of connections
@@ -24,7 +25,7 @@ Firefox add-on/WebExtension to quickly view basic information about every HTTP/H
 	* Icon(s) representing the classification by Firefox's [Enhanced Tracking Protection](https://support.mozilla.org/kb/enhanced-tracking-protection-firefox-desktop) (ETP) feature
 	* Icon representing the security state
 	* Days left until certificate expiration
-	* SSL/TLS version
+	* SSL/TLS version and if ECH used
 	* HSTS max age in days
 	* HTTP version
 	* Icon representing the HTTP status code(s)
@@ -44,7 +45,7 @@ All of this information is determined offline and locally in the browser. Users 
 * Load time
 * Largest Contentful Paint time
 
-Users can hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol and HSTS status.
+Users can hover over the toolbar icon to see a tooltip with the HTTP status line, IP address, Server location, Certificate issuer and expiration date, SSL/TLS protocol, ECH and HSTS status.
 
 To monitor the status of one or more servers, please see the [Remote Servers Status Monitoring](https://github.com/tdulcet/Remote-Servers-Status) script.
 
@@ -71,6 +72,9 @@ To monitor the status of one or more servers, please see the [Remote Servers Sta
 * The IP databases and PSL are automatically downloaded and updated directly, without needing to update the entire extension
 	* This allows users to enjoy much faster and more frequent updates and thus more accurate information
 * Use a keyboard shortcut to quickly open the popup (by default <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd>)
+* Shows the server software used on supported servers
+* Shows the page information on supported pages, including the author, the generator software and the description
+* Shows if private DNS (DNS over HTTPS) was used to lookup the IP addresses
 * Shows the active and failed/blocked connections in the Requests table
 * Shows certificate start/end dates and a countdown
 * Button to view the full certificate chain in Firefox's `about:certificate` [certificate viewer](https://github.com/april/certainly-something)
@@ -154,11 +158,16 @@ Pull requests welcome! Ideas for contributions:
 
 * Test the browserAction icon on more systems
 	* ⭐ Help needed to test on macOS
+* Show the values of more [HTTP headers](https://developer.mozilla.org/docs/Web/HTTP/Reference/Headers)
+* Show the values of some [HTML head/meta elements](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/meta/name)
 * Convert to [Manifest V3](https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/) (MV3)
 * Refactor into more modules
 * Improve the popup design
 * Add more information to the popup
 * Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/docs/Web/API/Element/innerHTML) from the popup
+* Show the `LOC` (Location), `HINFO` (Host Information) and `RP` (Responsible Person) DNS records, as well as if `TLSA` (DANE TLS certificate association) or `HTTPS` (HTTPS Binding) records exist
+	* Requires support for making DNS requests for arbitrary record types (see [bug 1449171](https://bugzilla.mozilla.org/show_bug.cgi?id=1449171) and [bug 1778794](https://bugzilla.mozilla.org/show_bug.cgi?id=1778794))
+* Show if the DNS requests were signed with DNS Security Extensions (DNSSEC)
 * Use the [Streams API](https://developer.mozilla.org/docs/Web/API/Streams_API) to process the IP geolocation databases to reduce memory usage
 * Use the [TextMetrics](https://developer.mozilla.org/docs/Web/API/TextMetrics) interface to dynamically determine the font size for each emoji when generating the icons (see [bug 1692791](https://bugzilla.mozilla.org/show_bug.cgi?id=1692791#c8))
 * Show the IP address and location for cached requests (see [bug 1395020](https://bugzilla.mozilla.org/show_bug.cgi?id=1395020))

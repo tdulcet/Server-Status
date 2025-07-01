@@ -44,6 +44,14 @@
 			<tr class="location hidden">
 				<td><span title="Server location">📍</span>&nbsp;<span id="location"></span></td>
 			</tr>
+			<tr class="info hidden">
+				<td><span title="Page information">ℹ️</span>&nbsp;<span class="authors hidden">Author: <span
+							id="authors"></span><br></span><span class="creators hidden">Creator: <span
+							id="creators"></span><br></span><span class="publishers hidden">Publisher: <span
+							id="publishers"></span><br></span><span class="generators hidden">Generator: <span
+							id="generators"></span><br></span><span class="descriptions hidden">Description: <div
+							id="descriptions" class="shorten"></div></span></td>
+			</tr>
 			<tr class="blacklist hidden">
 				<td><span id="blacklist"></span></td>
 			</tr>
@@ -55,10 +63,10 @@
 					</details>
 				</td>
 			</tr>
-			<tr class="no-content">
-				<td id="content"></td>
+			<tr class="no-performance">
+				<td id="performance"></td>
 			</tr>
-			<tr class="content hidden">
+			<tr class="performance hidden">
 				<td><span title="Load time">⏱️</span>&nbsp;Load time: <span id="load"></span>, <abbr
 						title="Time to first byte">TTFB</abbr>: <span id="ttfb"></span><br>
 					<span title="First paint">🖌️</span>&nbsp;First paint: <span id="paint"></span><span
@@ -66,7 +74,7 @@
 							id="lcp"></span></span>
 				</td>
 			</tr>
-			<!-- <tr class="content hidden">
+			<!-- <tr class="performance hidden">
 				<td><span title="Transfer size">⬇️</span>&nbsp;<span id="size"></span></td>
 			</tr> -->
 			<tr class="size hidden">
@@ -86,12 +94,13 @@
 				</td>
 			</tr>
 			<tr class="certificate hidden">
-				<td>Certificate issuer:<br><span id="issuer"></span>&nbsp;&nbsp;(<span id="link"></span>)</td>
+				<td><span title="Certificate issuer">📜</span>&nbsp;Certificate issuer:<br><span
+						id="issuer"></span>&nbsp;&nbsp;(<span id="link"></span>)</td>
 			</tr>
 			<tr class="certificate hidden">
 				<td><span title="Protocol">↔️</span>&nbsp;<abbr title="Secure Sockets Layer">SSL</abbr>/<abbr
-						title="Transport Layer Security">TLS</abbr>
-					Protocol: <span id="protocol"></span></td>
+						title="Transport Layer Security">TLS</abbr> Protocol: <span id="protocol"></span>, <abbr
+						title="Encrypted Client Hello">ECH</abbr>: <span id="ech"></span></td>
 			</tr>
 			<tr class="certificate hidden">
 				<td><abbr title="HTTP Strict Transport Security">HSTS</abbr>: <span id="hsts"></span></td>

@@ -2,6 +2,7 @@
 
 // communication type
 const CONTENT = "content";
+const PERFORMANCE = "performance";
 
 let paint = null;
 let lcp = null;
@@ -13,7 +14,7 @@ let lcp = null;
  */
 function send() {
 	const response = {
-		type: CONTENT,
+		type: PERFORMANCE,
 		performance: {
 			// https://bugzilla.mozilla.org/show_bug.cgi?id=1685688
 			navigation: JSON.parse(JSON.stringify(performance.getEntriesByType("navigation"))),
@@ -56,8 +57,22 @@ if (document.readyState === "complete") {
 
 browser.runtime.onMessage.addListener((message) => {
 	if (message.type === CONTENT) {
+		const metas = Object.groupBy(document.querySelectorAll("head meta[name][content]"), (meta) => meta.name.toLowerCase());
+
+		const response = {
+			type: CONTENT,
+			authors: metas.author?.map((meta) => meta.content),
+			creators: metas.creator?.map((meta) => meta.content),
+			publishers: metas.publisher?.map((meta) => meta.content),
+			generators: metas.generator?.map((meta) => meta.content),
+			descriptions: metas.description?.map((meta) => meta.content)
+		};
+		// console.log(response);
+
+		return Promise.resolve(response);
+	} else if (message.type === PERFORMANCE) {
 		// console.log(message);
-		return Promise.resolve({ type: CONTENT });
+		return Promise.resolve({ type: PERFORMANCE });
 	}
 });
 

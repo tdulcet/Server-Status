@@ -43,6 +43,7 @@ const defaultSettings = {
 		security: true,
 		expiration: true,
 		tlsversion: true,
+		ech: true,
 		hsts: true,
 		httpversion: true,
 		httpstatus: true
