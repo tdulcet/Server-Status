@@ -53,8 +53,8 @@
 	<form>
 		<section>
 			<h3>Server Status</h3>
-			<p><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button type="button">ℹ️
-						Information</button></a>
+			<p><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button type="button">ℹ️ Information</button></a>
+				<button type="button" id="shortcut">⌨️ Shortcut Settings</button>
 				<a href="https://www.tealdulcet.com/" target="_blank"><button type="button">❤️ Donate</button></a>
 			</p>
 		</section>
@@ -421,8 +421,13 @@
 						</div>
 
 						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="ech" data-optiongroup="settings" name="ech">
+							<label for="ech">Encrypted Client Hello (ECH) used</label>
+						</div>
+
+						<div class="line">
 							<input class="setting save-on-change" type="checkbox" id="hsts" data-optiongroup="settings" name="hsts">
-							<label for="hsts">HSTS max age in days</label>
+							<label for="hsts">HTTP Strict Transport Security (HSTS) max age in days</label>
 						</div>
 
 						<div class="line">
@@ -557,31 +562,35 @@
 							of DNSBLs</a>. Requires “Show all IP addresses” above. Enabling this option will share the
 						hostname and IP addresses with the respective blacklists provided below when opening the
 						popup.</span>
-					<ul>
-						<li>
-							<div class="line">
-								<label for="domainblacklist">Domain Blacklist</label>
-								<input class="setting save-on-change" type="text" id="domainblacklist" data-optiongroup="settings" name="domainblacklist" required>
-							</div>
-							<span class="line indent helper-text">Defaults to the Spamhaus Domain Block List.</span>
-						</li>
+					<br>
+					<details>
+						<summary>Click to show blacklist options</summary>
+						<ul>
+							<li>
+								<div class="line">
+									<label for="domainblacklist">Domain Blacklist</label>
+									<input class="setting save-on-change" type="text" id="domainblacklist" data-optiongroup="settings" name="domainblacklist" required>
+								</div>
+								<span class="line indent helper-text">Defaults to the Spamhaus Domain Block List.</span>
+							</li>
 
-						<li>
-							<div class="line">
-								<label for="ipv4blacklist">IPv4 Blacklist</label>
-								<input class="setting save-on-change" type="text" id="ipv4blacklist" data-optiongroup="settings" name="ipv4blacklist" required>
-							</div>
-							<span class="line indent helper-text">Defaults to the Spamhaus Block List.</span>
-						</li>
+							<li>
+								<div class="line">
+									<label for="ipv4blacklist">IPv4 Blacklist</label>
+									<input class="setting save-on-change" type="text" id="ipv4blacklist" data-optiongroup="settings" name="ipv4blacklist" required>
+								</div>
+								<span class="line indent helper-text">Defaults to the Spamhaus Block List.</span>
+							</li>
 
-						<li>
-							<div class="line">
-								<label for="ipv6blacklist">IPv6 Blacklist</label>
-								<input class="setting save-on-change" type="text" id="ipv6blacklist" data-optiongroup="settings" name="ipv6blacklist" required>
-							</div>
-							<span class="line indent helper-text">Defaults to the Spamhaus Block List.</span>
-						</li>
-					</ul>
+							<li>
+								<div class="line">
+									<label for="ipv6blacklist">IPv6 Blacklist</label>
+									<input class="setting save-on-change" type="text" id="ipv6blacklist" data-optiongroup="settings" name="ipv6blacklist" required>
+								</div>
+								<span class="line indent helper-text">Defaults to the Spamhaus Block List.</span>
+							</li>
+						</ul>
+					</details>
 				</li>
 			</ul>
 		</section>

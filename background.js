@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, CONTENT, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4RE, IPv6RE, outputbase85, expand, IPv6toInt, outputseconds, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode, delay } from "/common.js";
+import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4RE, IPv6RE, outputbase85, expand, IPv6toInt, outputseconds, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode, delay } from "/common.js";
 
 import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 
@@ -55,6 +55,7 @@ const columns = {
 	expiration: null,
 	tlsversion: null,
 	hsts: null,
+	ech: null,
 	httpversion: null,
 	httpstatus: null
 };
@@ -228,7 +229,7 @@ async function updateIcon(tabId, tab) {
 	const { details, securityInfo } = tab;
 	// console.log(tabId, details, securityInfo);
 	let icon = null;
-	const title = [`𝗦𝘁𝗮𝘁𝘂𝘀:  ${details.statusLine}`]; // Status
+	const title = [`𝗦𝘁𝗮𝘁𝘂𝘀:  ${details.statusLine}${details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : ""}`]; // Status
 	let text = null;
 	let backgroundColor = null;
 
@@ -318,8 +319,8 @@ async function updateIcon(tabId, tab) {
 			title.push(`𝗖𝗲𝗿𝘁𝗶𝗳𝗶𝗰𝗮𝘁𝗲:  ${sec > 0 ? "Expires" : "Expired"} ${rtf.format(days, "day")} (${dateTimeFormat4.format(new Date(end))})`);
 			// Certificate issuer
 			title.push(`𝗜𝘀𝘀𝘂𝗲𝗿:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} (${aissuer.C}) ${countryCode(aissuer.C)}` : ""}`);
-			// SSL/TLS protocol
-			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys`);
+			// SSL/TLS protocol, ECH
+			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys,  𝗘𝗖𝗛:  ${securityInfo.usedEch ? "✔ Yes" : "✖ No"}`);
 
 			if (settings.icon === 2) {
 				if (sec > 0) {
@@ -373,7 +374,7 @@ async function updateIcon(tabId, tab) {
 			if (header) {
 				const aheader = getHSTS(header.value);
 				// console.log(header, aheader);
-				atitle += `✔ Yes (${outputseconds(Number.parseInt(aheader["max-age"], 10))})`;
+				atitle += "max-age" in aheader ? `✔ Yes (${outputseconds(Number.parseInt(aheader["max-age"], 10))})` : "⚠ Bad header";
 			} else {
 				atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
 			}
@@ -1125,6 +1126,7 @@ function setSettings(asettings) {
 	columns.expiration = asettings.expiration;
 	columns.tlsversion = asettings.tlsversion;
 	columns.hsts = asettings.hsts;
+	columns.ech = asettings.ech;
 	columns.httpversion = asettings.httpversion;
 	columns.httpstatus = asettings.httpstatus;
 
@@ -1335,7 +1337,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				}
 			}
 			break;
-		case CONTENT: {
+		case PERFORMANCE: {
 			const tab = tabs.get(sender.tab.id);
 			if (tab) {
 				tab.performance = message.performance;
