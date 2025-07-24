@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Server Status",
-  "version": "1.4",
+  "version": "1.5",
   "author": "Teal Dulcet",
   "description": "Quickly view basic info about every webpage, including server location, IP addresses, certificate issuer and expiration date, HTTP status code and load time.",
   "homepage_url": "https://github.com/tdulcet/Server-Status",
@@ -27,7 +27,6 @@
   ],
 
   "browser_action": {
-    "browser_style": true,
     "default_icon": {
       "32": "icons/icon_32.png",
       "64": "icons/icon_64.png",
@@ -38,8 +37,7 @@
   },
 
   "options_ui": {
-    "page": "options/options.html",
-    "browser_style": true
+    "page": "options/options.html"
   },
 
   "background": {
