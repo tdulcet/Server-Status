@@ -1,5 +1,9 @@
 @import "/common/modules/AutomaticSettings/css/photonOptions.css";
 
+html {
+	font: caption;
+}
+
 table {
 	border-collapse: collapse;
 }
