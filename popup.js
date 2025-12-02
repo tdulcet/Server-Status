@@ -1190,7 +1190,7 @@ function updatePopup(tabId, tab) {
 			temp.textContent = `${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} ${countryCode(aissuer.C)}` : ""}`;
 			if (certificate.rawDER) {
 				const a = createlink(`about:certificate?${new URLSearchParams(securityInfo.certificates.map((cert) => ["cert", encodeURIComponent(btoa(String.fromCharCode(...cert.rawDER)))]))}`);
-				a.title = "Click to View Certificate";
+				a.title = `Click to View Certificate\nIf the opened tab is blank, press ${pasteSymbol}-V and Enter ↵`;
 				a.textContent = "🔗";
 				a.classList.add("button");
 				a.addEventListener("click", click);
