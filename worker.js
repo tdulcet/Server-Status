@@ -61,7 +61,7 @@ function agetGeoIP(url, v, internMap, cache, retry = 0) {
 	const fetchInfo = {
 		method: "GET"
 	};
-	if (cache) {
+	if (cache && !retry) {
 		fetchInfo.cache = cache;
 	}
 	return fetch(url, fetchInfo).then(async (response) => {
@@ -152,7 +152,7 @@ function agetGeoIP(url, v, internMap, cache, retry = 0) {
 		console.error(response);
 		console.timeEnd(alabel);
 
-		return Promise.reject();
+		throw new Error(`HTTP status code ${response.status}`);
 	}).catch(async (error) => {
 		if (retry >= 2) {
 			throw error;

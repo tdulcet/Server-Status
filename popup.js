@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, statusEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat1, numberFormat2, numberFormat3, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4RE, IPv6, IPv6RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode } from "/common.js";
+import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, statusEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat1, numberFormat2, numberFormat3, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4RE, IPv6, IPv6RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode } from "/common.js";
 
 const { TAB_ID_NONE } = browser.tabs;
 
@@ -1182,7 +1182,7 @@ function updatePopup(tabId, tab) {
 			const { start, end } = certificate.validity;
 			const sec = Math.floor((end - details.timeStamp) / 1000);
 			const { issuer } = certificate;
-			const aissuer = getissuer(issuer);
+			const aissuer = getcertname(issuer);
 			// console.log(issuer, aissuer);
 			// console.log(end, days, new Date(end));
 			const temp = document.getElementById("issuer");

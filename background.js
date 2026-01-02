@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4RE, IPv6RE, outputbase85, expand, IPv6toInt, outputseconds, outputlocation, earth, getissuer, getHSTS, getmessage, countryCode, delay } from "/common.js";
+import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4RE, IPv6RE, outputbase85, expand, IPv6toInt, outputseconds, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode, delay } from "/common.js";
 
 import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 
@@ -312,15 +312,17 @@ async function updateIcon(tabId, tab) {
 			const sec = Math.floor((end - details.timeStamp) / 1000);
 			const days = Math.floor(sec / 86400);
 			const { issuer } = certificate;
-			const aissuer = getissuer(issuer);
+			const aissuer = getcertname(issuer);
 			// console.log(end, days, new Date(end));
 			// Certificate expiration
 			// sec > 0 ? outputdateRange(start, end) : outputdate(end)
 			title.push(`𝗖𝗲𝗿𝘁𝗶𝗳𝗶𝗰𝗮𝘁𝗲:  ${sec > 0 ? "Expires" : "Expired"} ${rtf.format(days, "day")} (${dateTimeFormat4.format(new Date(end))})`);
 			// Certificate issuer
 			title.push(`𝗜𝘀𝘀𝘂𝗲𝗿:  ${aissuer.O || aissuer.CN || issuer}${aissuer.L ? `, ${aissuer.L}` : ""}${aissuer.S ? `, ${aissuer.S}` : ""}${aissuer.C ? `, ${regionNames.of(aissuer.C)} (${aissuer.C}) ${countryCode(aissuer.C)}` : ""}`);
-			// SSL/TLS protocol, ECH
-			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys,  𝗘𝗖𝗛:  ${securityInfo.usedEch ? "✔ Yes" : "✖ No"}`);
+			// SSL/TLS protocol
+			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys, ${securityInfo.cipherSuite}`);
+			// ECH
+			title.push(`𝗘𝗖𝗛:  ${securityInfo.usedEch ? "✔ Yes" : "✖ No"}`);
 
 			if (settings.icon === 2) {
 				if (sec > 0) {

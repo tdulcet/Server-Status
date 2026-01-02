@@ -157,10 +157,12 @@ export function outputunit(number, scale) {
 		str = number.toLocaleString([], { maximumFractionDigits: 0 });
 	}
 
-	str += `\u00A0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
+	if (power > 0) {
+		str += `\u00A0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
 
-	if (!scale && power > 0) {
-		str += "i";
+		if (!scale) {
+			str += "i";
+		}
 	}
 
 	return str;
@@ -304,19 +306,19 @@ export function earth(longitude) {
 }
 
 /**
- * Get certificate issuer.
+ * Get certificate issuer or subject.
  *
- * @param {string} issuer
+ * @param {string} name
  * @returns {Object.<string, string|void>}
  */
-export function getissuer(issuer) {
-	// console.log(issuer);
-	const aissuer = {};
-	for (const item of issuer.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/u).filter((_x, i) => i % 2 !== 0)) {
+export function getcertname(name) {
+	// console.log(name);
+	const aname = {};
+	for (const item of name.split(/([A-Z]+=(?:"[^"]+"|[^",]*))(?:,|$)/u).filter((_x, i) => i % 2 !== 0)) {
 		const [type, value] = item.split("=");
-		aissuer[type] = value;
+		aname[type] = value;
 	}
-	return aissuer;
+	return aname;
 }
 
 /**

@@ -61,11 +61,11 @@ browser.runtime.onMessage.addListener((message) => {
 
 		const response = {
 			type: CONTENT,
-			authors: metas.author?.map((meta) => meta.content),
-			creators: metas.creator?.map((meta) => meta.content),
-			publishers: metas.publisher?.map((meta) => meta.content),
-			generators: metas.generator?.map((meta) => meta.content),
-			descriptions: metas.description?.map((meta) => meta.content)
+			authors: metas.author?.map((meta) => meta.content).filter(Boolean),
+			creators: metas.creator?.map((meta) => meta.content).filter(Boolean),
+			publishers: metas.publisher?.map((meta) => meta.content).filter(Boolean),
+			generators: metas.generator?.map((meta) => meta.content).filter(Boolean),
+			descriptions: metas.description?.map((meta) => meta.content).filter(Boolean)
 		};
 		// console.log(response);
 
