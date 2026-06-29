@@ -55,7 +55,7 @@
 			<h3>Server Status</h3>
 			<p><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button type="button">ℹ️ Information</button></a>
 				<button type="button" id="shortcut">⌨️ Shortcut Settings</button>
-				<a href="https://www.tealdulcet.com/" target="_blank"><button type="button">❤️ Donate</button></a>
+				<a href="https://tealdulcet.com/#donate" target="_blank"><button type="button">❤️ Donate</button></a>
 			</p>
 		</section>
 
@@ -217,7 +217,7 @@
 
 							<div class="line">
 								<input id="GeoDB1" type="radio" name="GeoDB" value="1">
-								<label for="GeoDB1"><strong>ip-location-db GeoFeed + Whois + ASN</strong></label>
+								<label for="GeoDB1"><strong>ip-location-db server-country (GeoFeed + Whois + ASN)</strong></label>
 								<ul class="list">
 									<li>Updated Daily</li>
 								</ul>
@@ -500,6 +500,14 @@
 							href="https://datatracker.ietf.org/doc/html/rfc1924" target="_blank">RFC 1924</a>Base 85
 						compact representation for IPv6 addresses. For example, show
 						<code>9R}vSQ9RqiCvG6zn?Zyh</code>instead of <code>2001:db8::ff00:42:8329</code>.</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="skew" data-optiongroup="settings" name="skew">
+						<label for="skew">Show server clock skew</label>
+					</div>
+					<span class="line indent helper-text">Show the server clock skew in the popup.</span>
 				</li>
 
 				<li>

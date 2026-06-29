@@ -2,7 +2,7 @@
 
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1247687
 // importScripts("common.js");
-import { BACKGROUND, NOTIFICATION, LOCATION, WORKER, dateTimeFormat4, numberFormat, IPv4RE, IPv6RE, outputunit, expand, IPv4toInt, IPv6toInt, outputseconds, delay } from "/common.js";
+import { BACKGROUND, NOTIFICATION, LOCATION, WORKER, dateTimeFormat4, numberFormat, IPv4_RE, IPv6_RE, outputunit, expand, IPv4toInt, IPv6toInt, outputseconds, delay } from "/common.js";
 
 const label = "GeoIPv";
 
@@ -240,11 +240,10 @@ async function getGeoLoc(date, languages, cache) {
 		console.log(GeoIPv4.length, GeoIPv6.length, new Date(date));
 
 		const message = {
-			type: BACKGROUND
+			type: BACKGROUND,
+			// The full location databases are too large to store in local storage, which is limited to 255 MiB
+			GEOIP: [1, 2, 9, 3, 4, 5].includes(settings.GeoDB) ? { GeoIPv4, GeoIPv6, GeoDB: settings.GeoDB, date } : { GeoDB: settings.GeoDB, date }
 		};
-
-		// The full location databases are too large to store in local storage, which is limited to 255 MiB
-		message.GEOIP = [1, 2, 9, 3, 4, 5].includes(settings.GeoDB) ? { GeoIPv4, GeoIPv6, GeoDB: settings.GeoDB, date } : { GeoDB: settings.GeoDB, date };
 
 		postMessage(message);
 
@@ -359,10 +358,10 @@ function searchGeoIP(GeoIP, address) {
  */
 function getGeoIP(address) {
 	if (GeoIPv4 && GeoIPv6) {
-		if (IPv4RE.test(address)) {
+		if (IPv4_RE.test(address)) {
 			return searchGeoIP(GeoIPv4, IPv4toInt(address));
 		}
-		if (IPv6RE.test(address)) {
+		if (IPv6_RE.test(address)) {
 			address = expand(address.toLowerCase()).join("");
 			// IPv4-mapped, IPv4-compatible and IPv4-embedded IPv6 addresses
 			if (address.startsWith("00000000000000000000ffff") || address.startsWith("000000000000000000000000") || address.startsWith("0064ff9b")) {
@@ -379,7 +378,7 @@ function getGeoIP(address) {
 /**
  * Set settings.
  *
- * @param {Object} message
+ * @param {object} message
  * @returns {void}
  */
 function setSettings(message) {

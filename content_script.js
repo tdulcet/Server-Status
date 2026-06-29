@@ -70,7 +70,8 @@ browser.runtime.onMessage.addListener((message) => {
 		// console.log(response);
 
 		return Promise.resolve(response);
-	} else if (message.type === PERFORMANCE) {
+	}
+	if (message.type === PERFORMANCE) {
 		// console.log(message);
 		return Promise.resolve({ type: PERFORMANCE });
 	}

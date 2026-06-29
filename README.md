@@ -164,7 +164,7 @@ Pull requests welcome! Ideas for contributions:
 * Refactor into more modules
 * Improve the popup design
 * Add more information to the popup
-* Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/docs/Web/API/Element/innerHTML) from the popup
+* Remove remaining uses of [`.innerHTML`](https://developer.mozilla.org/docs/Web/API/Element/innerHTML)/`.setHTML()` from the popup
 * Show the `LOC` (Location), `HINFO` (Host Information) and `RP` (Responsible Person) DNS records, as well as if `TLSA` (DANE TLS certificate association) or `HTTPS` (HTTPS Binding) records exist
 	* Requires support for making DNS requests for arbitrary record types (see [bug 1449171](https://bugzilla.mozilla.org/show_bug.cgi?id=1449171) and [bug 1778794](https://bugzilla.mozilla.org/show_bug.cgi?id=1778794))
 * Show if the DNS requests were signed with DNS Security Extensions (DNSSEC)

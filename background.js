@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4RE, IPv6RE, outputbase85, expand, IPv6toInt, outputseconds, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode, delay } from "/common.js";
+import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4_RE, IPv6_RE, outputbase85, expand, IPv6toInt, outputseconds, outputstatus, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode, delay } from "/common.js";
 
 import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 
@@ -28,6 +28,7 @@ const settings = {
 	warndays: null, // Days
 	open: null,
 	dns: null,
+	skew: null,
 	fullipv6: null,
 	compactipv6: null,
 	blocked: null,
@@ -112,7 +113,9 @@ function notification(title, message, date) {
 browser.notifications.onClicked.addListener((notificationId) => {
 	const url = notifications.get(notificationId);
 
-	if (url) {
+	if (url == null) {
+		browser.runtime.openOptionsPage();
+	} else if (url) {
 		browser.tabs.create({ url });
 	}
 });
@@ -219,30 +222,33 @@ function setIcon(tabId, icon, title, text, backgroundColor) {
  * Update the browserAction icon.
  *
  * @param {number} tabId
- * @param {Object} tab
- * @param {Object} tab.details
- * @param {Object} tab.securityInfo
- * @param {Object} [tab.performance]
+ * @param {object} tab
+ * @param {object} tab.details
+ * @param {object} tab.securityInfo
+ * @param {object} [tab.performance]
  * @returns {Promise<void>}
  */
 async function updateIcon(tabId, tab) {
 	const { details, securityInfo } = tab;
 	// console.log(tabId, details, securityInfo);
 	let icon = null;
-	const title = [`𝗦𝘁𝗮𝘁𝘂𝘀:  ${details.statusLine}${details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : ""}`]; // Status
+	const title = [];
 	let text = null;
 	let backgroundColor = null;
 
+	const { statusCode } = details;
+	title.push(`𝗦𝘁𝗮𝘁𝘂𝘀:  ${outputstatus(statusCode)} ${details.statusLine}${statusCode in status_codes ? `  (${status_codes[statusCode]})` : ""}`); // Status
+
 	if (details.ip) {
-		const ipv4 = IPv4RE.test(details.ip);
-		const ipv6 = IPv6RE.test(details.ip);
+		const ipv4 = IPv4_RE.test(details.ip);
+		const ipv6 = IPv6_RE.test(details.ip);
 		console.assert(ipv4 || ipv6, "Error: Unknown IP address", details.ip);
 		if (ipv4) {
 			// IPv4 address
-			title.push(`𝗜𝗣𝘃𝟰 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${details.ip}`);
+			title.push(`𝗜𝗣𝘃𝟰 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${securityInfo.usedPrivateDns ? certificateEmojis.shield : ""}${details.ip}`);
 		} else if (ipv6) {
 			// IPv6 address
-			title.push(`𝗜𝗣𝘃𝟲 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${settings.fullipv6 ? expand(details.ip).join(":") : settings.compactipv6 ? outputbase85(IPv6toInt(expand(details.ip).join(""))) : details.ip}`);
+			title.push(`𝗜𝗣𝘃𝟲 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${securityInfo.usedPrivateDns ? certificateEmojis.shield : ""}${settings.fullipv6 ? expand(details.ip).join(":") : settings.compactipv6 ? outputbase85(IPv6toInt(expand(details.ip).join(""))) : details.ip}`);
 		}
 
 		if (settings.icon === 6) {
@@ -322,7 +328,7 @@ async function updateIcon(tabId, tab) {
 			// SSL/TLS protocol
 			title.push(`𝗦𝗦𝗟/𝗧𝗟𝗦 𝗽𝗿𝗼𝘁𝗼𝗰𝗼𝗹:  ${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys, ${securityInfo.cipherSuite}`);
 			// ECH
-			title.push(`𝗘𝗖𝗛:  ${securityInfo.usedEch ? "✔ Yes" : "✖ No"}`);
+			title.push(`𝗘𝗖𝗛:  ${securityInfo.usedEch ? `${emojis.heavy_check_mark} Yes` : `${emojis.heavy_multiplication_x} No`}`);
 
 			if (settings.icon === 2) {
 				if (sec > 0) {
@@ -376,21 +382,20 @@ async function updateIcon(tabId, tab) {
 			if (header) {
 				const aheader = getHSTS(header.value);
 				// console.log(header, aheader);
-				atitle += "max-age" in aheader ? `✔ Yes (${outputseconds(Number.parseInt(aheader["max-age"], 10))})` : "⚠ Bad header";
+				atitle += "max-age" in aheader ? `${emojis.heavy_check_mark} Yes (${outputseconds(Number.parseInt(aheader["max-age"], 10))})` : `${certificateEmojis.warning_sign} Bad header`;
 			} else {
-				atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
+				atitle += securityInfo.hsts ? `${emojis.heavy_check_mark} Yes` : `${emojis.heavy_multiplication_x} No`;
 			}
 			// console.assert(!!header === securityInfo.hsts, "Error: HSTS", header, securityInfo.hsts);
 		} else {
-			atitle += securityInfo.hsts ? "✔ Yes" : "✖ No";
+			atitle += securityInfo.hsts ? `${emojis.heavy_check_mark} Yes` : `${emojis.heavy_multiplication_x} No`;
 		}
 		// HSTS
 		title.push(`𝗛𝗦𝗧𝗦:  ${atitle}`);
 	}
 
 	switch (settings.icon) {
-		case 4: {
-			const { statusCode } = details;
+		case 4:
 			if (statusCode >= 100 && statusCode < 200) {
 				icon = statusIcons.large_blue_square;
 				backgroundColor = "blue";
@@ -407,7 +412,6 @@ async function updateIcon(tabId, tab) {
 			}
 			text = statusCode.toString();
 			break;
-		}
 		case 5: {
 			// Get HTTP version
 			const re = /^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: .*)?$/u;
@@ -480,7 +484,7 @@ async function updateIcon(tabId, tab) {
 /**
  * Update active tab.
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {Promise<void>}
  */
 async function updateActiveTab(details) {
@@ -546,7 +550,7 @@ browser.tabs.onRemoved.addListener((tabId) => {
 /**
  * Save request details.
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {void}
  */
 function beforeRequest(details) {
@@ -599,7 +603,7 @@ browser.webRequest.onBeforeRequest.addListener(beforeRequest,
 /**
  * Save request details and security info.
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {Promise<void>}
  */
 async function headersReceived(details) {
@@ -651,7 +655,7 @@ browser.webRequest.onHeadersReceived.addListener(headersReceived,
 /**
  * Save redirect.
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {void}
  */
 function beforeRedirect(details) {
@@ -709,7 +713,7 @@ browser.webRequest.onBeforeRedirect.addListener(beforeRedirect,
 /**
  * Save completed.
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {void}
  */
 function completed(details) {
@@ -755,7 +759,7 @@ browser.webRequest.onCompleted.addListener(completed,
  * Save error.
  * Firefox error codes: https://searchfox.org/mozilla-central/rev/f6a2ef2f028b8f1eb82fa5dc5cb1e39a3baa8feb/js/xpconnect/src/xpc.msg
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {void}
  */
 function errorOccurred(details) {
@@ -797,7 +801,7 @@ browser.webRequest.onErrorOccurred.addListener(errorOccurred,
  * @param {string} hostname
  * @returns {string}
  */
-function punycode(hostname) {
+function idna_encode(hostname) {
 	return new URL(`https://${hostname}`).hostname;
 }
 
@@ -829,6 +833,8 @@ function getPSL(date, retry = 0) {
 			parsePSL(PSL);
 		} else {
 			console.error(response);
+
+			throw new Error(`HTTP status code ${response.status}`);
 		}
 
 		console.timeEnd(label);
@@ -845,7 +851,7 @@ function getPSL(date, retry = 0) {
 /**
  * Traverse Trie tree of objects to create RegEx.
  *
- * @param {Object.<string, Object|boolean>} tree
+ * @param {Object.<string, object | boolean>} tree
  * @returns {string}
  */
 function createRegEx(tree) {
@@ -894,7 +900,7 @@ function createTree(arr) {
 	for (const str of arr) {
 		let temp = tree;
 
-		for (const char of Array.from(punycode(str.replaceAll("*", "---")).replaceAll("---", "*")).reverse()) {
+		for (const char of Array.from(idna_encode(str.replaceAll("*", "---")).replaceAll("---", "*")).reverse()) {
 			if (!(char in temp)) {
 				temp[char] = {};
 			}
@@ -965,7 +971,7 @@ async function getGeoLoc(date) {
  * Get the geolocation.
  *
  * @param {string} address
- * @returns {Promise<Object|null>}
+ * @returns {Promise<object | null>}
  */
 function getGeoIP(address) {
 	const message = {
@@ -1015,7 +1021,7 @@ browser.idle.onStateChanged.addListener(newState);
 /**
  * Handle alarm.
  *
- * @param {Object} alarmInfo
+ * @param {object} alarmInfo
  * @returns {Promise<void>}
  */
 async function handleAlarm(alarmInfo) {
@@ -1040,61 +1046,65 @@ browser.alarms.onAlarm.addListener(handleAlarm);
 /**
  * Send settings to popup.
  *
- * @param {Object} details
- * @param {Object} tab
+ * @param {object} details
+ * @param {object} tab
  * @returns {void}
  */
 function sendSettings(details, tab) {
-	if (popup && details.tabId === popup) {
-		const func = (details, tab) => {
-			const response = {
-				type: POPUP,
-				WARNDAYS: settings.warndays,
-				FULLIPv6: settings.fullipv6,
-				COMPACTIPv6: settings.compactipv6,
-				OPEN: settings.open,
-				BLOCKED: settings.blocked,
-				HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
-				DNS: settings.dns,
-				SUFFIX: settings.suffix,
-				GeoDB: settings.GeoDB,
-				MAP: settings.map,
-				LOOKUPIP: settings.lookupip,
-				LOOKUPHOST: settings.lookuphost,
-				SEND: settings.send,
-				details,
-				tab
-			};
-			// console.log(response);
+	if (!(popup && details.tabId === popup)) {
+		return;
+	}
 
-			browser.runtime.sendMessage(response).catch((/* error */) => {
-				// console.error(error);
-				popup = null;
-				if (intervalId) {
-					clearInterval(intervalId);
-					intervalId = null;
-				}
-			});
+	const func = (details, tab) => {
+		const response = {
+			type: POPUP,
+			WARNDAYS: settings.warndays,
+			FULLIPv6: settings.fullipv6,
+			COMPACTIPv6: settings.compactipv6,
+			OPEN: settings.open,
+			BLOCKED: settings.blocked,
+			HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && details.incognito,
+			DNS: settings.dns,
+			SUFFIX: settings.suffix,
+			GeoDB: settings.GeoDB,
+			MAP: settings.map,
+			LOOKUPIP: settings.lookupip,
+			LOOKUPHOST: settings.lookuphost,
+			SEND: settings.send,
+			details,
+			tab
 		};
+		// console.log(response);
 
-		if (intervalId) {
-			args = [details, tab];
-		} else {
-			func(details, tab);
-			intervalId = setInterval(() => {
-				if (args) {
-					func(...args);
-					args = null;
-				}
-			}, 1000);
-		}
+		browser.runtime.sendMessage(response).catch((/* error */) => {
+			// console.error(error);
+			popup = null;
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
+			}
+		});
+	};
+
+	if (intervalId) {
+		args = [details, tab];
+	} else {
+		func(details, tab);
+		intervalId = setInterval(() => {
+			if (!args) {
+				return;
+			}
+
+			func(...args);
+			args = null;
+		}, 1000);
 	}
 }
 
 /**
  * Set settings.
  *
- * @param {Object} asettings
+ * @param {object} asettings
  * @returns {void}
  */
 function setSettings(asettings) {
@@ -1114,6 +1124,7 @@ function setSettings(asettings) {
 	settings.icon = Number.parseInt(asettings.icon, 10);
 	settings.badge = asettings.badge;
 	settings.dns = asettings.dns;
+	settings.skew = asettings.skew;
 	settings.blacklist = asettings.blacklist;
 	settings.domainblacklists = [asettings.domainblacklist];
 	settings.ipv4blacklists = [asettings.ipv4blacklist];
@@ -1301,6 +1312,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				BLOCKED: settings.blocked,
 				HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,
 				DNS: settings.dns,
+				SKEW: settings.skew,
 				BLACKLIST: settings.blacklist,
 				DOMAINBLACKLISTS: settings.domainblacklists,
 				IPv4BLACKLISTS: settings.ipv4blacklists,
@@ -1359,7 +1371,16 @@ browser.runtime.onInstalled.addListener((details) => {
 	const manifest = browser.runtime.getManifest();
 	switch (details.reason) {
 		case "install":
-			notification(`🎉 ${manifest.name} installed`, `Thank you for installing the “${TITLE}” add-on!\nVersion: ${manifest.version}\n\nOpen the options/preferences page to configure this extension.`);
+			if (settings.send) {
+				browser.notifications.create({
+					type: "basic",
+					iconUrl: browser.runtime.getURL("icons/icon_128.png"),
+					title: `🎉 ${manifest.name} installed`,
+					message: `Thank you for installing the “${TITLE}” add-on!\nVersion: ${manifest.version}\n\nClick to open the options/preferences page to configure this extension.`
+				}).then((notificationId) => {
+					notifications.set(notificationId, null);
+				});
+			}
 			break;
 		case "update":
 			if (settings.send) {
@@ -1369,13 +1390,15 @@ browser.runtime.onInstalled.addListener((details) => {
 					title: `✨ ${manifest.name} updated`,
 					message: `The “${TITLE}” add-on has been updated to version ${manifest.version}. Click to see the release notes.\n\n❤️ Huge thanks to the generous donors that have allowed me to continue to work on this extension!`
 				}).then(async (notificationId) => {
-					if (browser.runtime.getBrowserInfo) {
-						const browserInfo = await browser.runtime.getBrowserInfo();
+					if (!browser.runtime.getBrowserInfo) {
+						return;
+					}
 
-						if (browserInfo.name !== "Thunderbird") {
-							const url = `https://addons.mozilla.org/firefox/addon/server-status/versions/${manifest.version}`;
-							notifications.set(notificationId, url);
-						}
+					const browserInfo = await browser.runtime.getBrowserInfo();
+
+					if (browserInfo.name !== "Thunderbird") {
+						const url = `https://addons.mozilla.org/firefox/addon/server-status/versions/${manifest.version}`;
+						notifications.set(notificationId, url);
 					}
 				});
 			}

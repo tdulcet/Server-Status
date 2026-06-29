@@ -12,12 +12,12 @@
 
 <body>
 	<!-- <h3>Server Status</h3> -->
-	<div><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button
-				type="button">ℹ️Information</button></a>
+	<div class="toolbar"><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button
+				type="button">ℹ️ Information</button></a>
 		<button type="button" id="settings">⚙️ Settings</button>
-		<a href="https://www.tealdulcet.com/" target="_blank"><button type="button">❤️ Donate</button></a>
+		<a href="https://tealdulcet.com/#donate" target="_blank"><button type="button">❤️ Donate</button></a>
 	</div>
-	<hr style="width: 100%" />
+	<!-- <hr style="width: 100%" /> -->
 	<div class="no-data">
 		<p id="data">⟳ Refresh page to show.</p>
 	</div>
@@ -58,7 +58,7 @@
 			<tr>
 				<td>
 					<details id="details">
-						<summary>⇅ <span id="number"></span> Requests (click to show)</summary>
+						<summary>⇅ Requests <span id="number"></span> (click to show)</summary>
 						<span id="requests">None</span>
 					</details>
 				</td>
@@ -83,6 +83,9 @@
 			</tr>
 			<tr class="modified hidden">
 				<td><span title="Last modified">💾</span>&nbsp;<span id="modified"></span></td>
+			</tr>
+			<tr class="date hidden">
+				<td><span title="Server time">🕰️</span>&nbsp;Clock skew: <span id="date"></span></td>
 			</tr>
 			<tr>
 				<td>Connection: <span id="state"></span></td>

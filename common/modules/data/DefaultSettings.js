@@ -8,8 +8,8 @@
  * An object of all default settings.
  *
  * @private
- * @const
- * @type {Object}
+ * @constant
+ * @type {object}
  */
 const defaultSettings = {
 	settings: {
@@ -19,6 +19,7 @@ const defaultSettings = {
 		warndays: 3, // Days
 		open: false,
 		dns: true,
+		skew: false,
 		fullipv6: false,
 		compactipv6: false,
 		blocked: true,
@@ -57,7 +58,7 @@ Object.values(defaultSettings).map(Object.freeze);
  * Export the default settings to be used.
  *
  * @public
- * @const
- * @type {Object}
+ * @constant
+ * @type {object}
  */
 export const DEFAULT_SETTINGS = Object.freeze(defaultSettings);

@@ -1,12 +1,14 @@
 "use strict";
 
-import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, statusEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat1, numberFormat2, numberFormat3, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4RE, IPv6, IPv6RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode } from "/common.js";
+import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, statusEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4_RE, IPv6, IPv6_RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputstatus, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode } from "/common.js";
 
 const { TAB_ID_NONE } = browser.tabs;
 
+const durationFormat = new Intl.DurationFormat([], { style: "long" });
+
 const formatter2 = new Intl.ListFormat([], { style: "short" });
 
-const aIPv6RE = new RegExp(String.raw`^\[${IPv6}\]$`, "u");
+const aIPv6_RE = new RegExp(String.raw`^\[${IPv6}\]$`, "u");
 
 let WARNDAYS = 3;
 let OPEN = true;
@@ -20,6 +22,7 @@ let MAP = 0;
 let LOOKUPIP = 0;
 let LOOKUPHOST = 0;
 let DNS = true;
+let SKEW = false;
 let BLACKLIST = false;
 let SEND = true;
 
@@ -78,22 +81,11 @@ function notification(title, message) {
  */
 function outputduration(sec) {
 	// console.log(now);
-	const days = Math.floor(sec / 86400);
-	const hours = Math.floor(sec % 86400 / 3600);
-	const minutes = Math.floor(sec % 3600 / 60);
+	const days = Math.trunc(sec / 86400);
+	const hours = Math.trunc(sec % 86400 / 3600);
+	const minutes = Math.trunc(sec % 3600 / 60);
 	const seconds = sec % 60;
-	let text = "";
-	if (days) {
-		text += `${numberFormat1.format(days)} `;
-	}
-	if (days || hours) {
-		text += `${numberFormat2.format(hours)} `;
-	}
-	if (days || hours || minutes) {
-		text += `${numberFormat3.format(minutes)} `;
-	}
-	text += numberFormat4.format(seconds);
-	return text;
+	return durationFormat.format({ days, hours, minutes, seconds }) || numberFormat4.format(seconds);
 }
 
 /**
@@ -115,6 +107,7 @@ function outputtimer(time, now) {
 		text = "Expired";
 		color = "red";
 	}
+	timer.classList.remove("green", "yellow", "red");
 	timer.classList.add(color);
 	timer.textContent = text;
 }
@@ -144,14 +137,9 @@ function timerTick(time) {
  * @returns {string}
  */
 function outputmsec(msec) {
-	const seconds = Math.floor(msec / 1000);
+	const seconds = Math.trunc(msec / 1000);
 	const milliseconds = msec % 1000;
-	let text = "";
-	if (seconds) {
-		text += `${numberFormat4.format(seconds)} `;
-	}
-	text += numberFormat5.format(milliseconds);
-	return text;
+	return durationFormat.format({ seconds, milliseconds }) || numberFormat5.format(milliseconds);
 }
 
 /**
@@ -265,8 +253,8 @@ function lookuphost(hostname) {
  * @returns {Array.<HTMLElement|string>}
  */
 function outputaddress(address, hostname, current, ipv4, ipv6) {
-	ipv4 ??= IPv4RE.test(address);
-	ipv6 ??= IPv6RE.test(address);
+	ipv4 ??= IPv4_RE.test(address);
+	ipv6 ??= IPv6_RE.test(address);
 	console.assert(ipv4 || ipv6, "Error: Unknown IP address", address);
 
 	const aaddress = ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? outputbase85(IPv6toInt(expand(address).join(""))) : address : address;
@@ -281,7 +269,7 @@ function outputaddress(address, hostname, current, ipv4, ipv6) {
 	a.classList.add(ipv6 ? "ipv6" : "ipv4");
 	const text = [a];
 	if (LOOKUPIP) {
-		text.push("\u00A0", ...lookupip(hostname, address));
+		text.push("\u{A0}", ...lookupip(hostname, address));
 	}
 	return text;
 }
@@ -315,8 +303,8 @@ function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
  * @returns {Array.<HTMLElement|string>}
  */
 function outputhost(hostname, protocol, ipv4, ipv6) {
-	ipv4 ??= IPv4RE.test(hostname);
-	ipv6 ??= aIPv6RE.test(hostname);
+	ipv4 ??= IPv4_RE.test(hostname);
+	ipv6 ??= aIPv6_RE.test(hostname);
 
 	if (SUFFIX && suffixes_pattern && !ipv4 && !ipv6) {
 		const suffixResult = suffixes_pattern.exec(hostname);
@@ -324,18 +312,18 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 		const labels = hostname.split(".");
 		const alabels = exceptionResult ? exceptionResult[1].split(".").slice(1) : suffixResult ? suffixResult[1].split(".") : labels.slice(-1);
 		if (labels.length > alabels.length) {
-			const domain = labels.slice(-(alabels.length + 1)).join("\u200B.");
-			const subdomain = labels.slice(0, -(alabels.length + 1)).join("\u200B.");
+			const domain = labels.slice(-(alabels.length + 1)).join("\u{200B}.");
+			const subdomain = labels.slice(0, -(alabels.length + 1)).join("\u{200B}.");
 			const a = createlink(`${protocol}//${hostname}`);
 			const strong = document.createElement("strong");
 			strong.textContent = domain;
 			if (subdomain) {
-				a.textContent = `${subdomain}\u200B.`;
+				a.textContent = `${subdomain}\u{200B}.`;
 			}
 			a.append(strong);
 			const text = [a];
 			if (LOOKUPHOST) {
-				text.push("\u00A0", ...lookuphost(hostname));
+				text.push("\u{A0}", ...lookuphost(hostname));
 			}
 			return text;
 		}
@@ -346,46 +334,15 @@ function outputhost(hostname, protocol, ipv4, ipv6) {
 	a.textContent = hostname;
 	const text = [a];
 	if (LOOKUPHOST && !ipv4 && !ipv6) {
-		text.push("\u00A0", ...lookuphost(hostname));
+		text.push("\u{A0}", ...lookuphost(hostname));
 	}
 	return text;
 }
 
 /**
- * Handle error.
- *
- * @param {string} error
- * @returns {void}
- */
-function handleError(error) {
-	console.error(`Error: ${error}`);
-}
-
-/**
- * Convert HTTP statue code to emoji.
- *
- * @param {number} statusCode
- * @returns {string}
- */
-function status(statusCode) {
-	let emoji;
-	if (statusCode >= 100 && statusCode < 200) {
-		emoji = statusEmojis.large_blue_square;
-	} else if (statusCode >= 200 && statusCode < 300) {
-		emoji = statusEmojis.large_green_square;
-	} else if (statusCode >= 300 && statusCode < 400) {
-		emoji = statusEmojis.large_yellow_square;
-	} else {
-		// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
-		emoji = statusCode === 418 ? statusEmojis.teapot : statusEmojis.large_red_square;
-	}
-	return emoji;
-}
-
-/**
  * Get emoji and URL classification.
  *
- * @param {Object} details
+ * @param {object} details
  * @returns {{emojis: string[], classifications: string[]}}
  */
 function getClassification(details) {
@@ -418,8 +375,8 @@ function getClassification(details) {
 /**
  * Get emoji and security state.
  *
- * @param {Object} tab
- * @param {Object} tab.securityInfo
+ * @param {object} tab
+ * @param {object} tab.securityInfo
  * @param {string} [tab.error]
  * @returns {{emoji: string[], state: string}}
  */
@@ -475,10 +432,12 @@ function outputtitle(array, str) {
 function checkblacklist(domain, blacklist, address) {
 	return browser.dns.resolve(domain, ["disable_trr"]).then((record) => {
 		// console.log(record);
-		if (record.addresses.length) {
-			document.getElementById("blacklist").innerText += `🚫\u00A0${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
-			document.querySelector(".blacklist").classList.remove("hidden");
+		if (!record.addresses.length) {
+			return;
 		}
+
+		document.getElementById("blacklist").innerText += `🚫\u{A0}${address ? `IP address (${address})` : "domain"} is listed in the "${blacklist}" blacklist (${record.addresses.join(" ")})\n`;
+		document.querySelector(".blacklist").classList.remove("hidden");
 	}).catch(() => {});
 }
 
@@ -491,8 +450,8 @@ function checkblacklist(domain, blacklist, address) {
  * @returns {Promise<void>}
  */
 async function checkblacklists(hostname, ipv4s, ipv6s) {
-	const ipv4 = IPv4RE.test(hostname);
-	const ipv6 = aIPv6RE.test(hostname);
+	const ipv4 = IPv4_RE.test(hostname);
+	const ipv6 = aIPv6_RE.test(hostname);
 	// Check Domain Blacklists
 	if (!ipv4 && !ipv6) {
 		for (const bl of DOMAINBLACKLISTS) {
@@ -588,7 +547,7 @@ function copy(uri) {
  * @returns {void}
  */
 function click(event) {
-	const url = event.target.href;
+	const url = event.currentTarget.href;
 	// console.log(url);
 
 	browser.tabs.create({ url, openerTabId: tabId }).catch((error) => {
@@ -606,7 +565,7 @@ function click(event) {
 /**
  * Update transfer size.
  *
- * @param {Object} tab
+ * @param {object} tab
  * @param {number} tab.requestSize
  * @param {number} tab.responseSize
  * @returns {void}
@@ -620,7 +579,7 @@ function updateTransfer({ requestSize, responseSize }) {
 /**
  * Update performance data.
  *
- * @param {Object} performance
+ * @param {object} performance
  * @returns {void}
  */
 function updatePerformance(performance) {
@@ -892,7 +851,7 @@ function updateTable(requests) {
 					if (COLUMNS.httpstatus) {
 						const cell = row.insertCell();
 						cell.title = outputtitle(arequest.map((obj) => obj.details.statusLine + (obj.details.statusCode in status_codes ? `  (${status_codes[obj.details.statusCode]})` : "")), details.statusLine + (details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : ""));
-						cell.textContent = Array.from(new Set(arequest.map((obj) => obj.details.statusCode)), (key) => status(key)).join("");
+						cell.textContent = Array.from(new Set(arequest.map((obj) => obj.details.statusCode)), (key) => outputstatus(key)).join("");
 					}
 
 					let cell = row.insertCell();
@@ -902,7 +861,8 @@ function updateTable(requests) {
 					const addresses = Array.from(new Set(arequest.map((obj) => obj.details.ip).filter(Boolean)));
 					cell = row.insertCell();
 					if (addresses.length) {
-						cell.append(...addresses.flatMap((x, i) => [...i ? ["\n"] : [], ...outputaddress(x, hostname, details.ip)]));
+						cell.title = `Private DNS: ${securityInfo.usedPrivateDns ? "Yes" : "No"}`;
+						cell.append(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...addresses.flatMap((x, i) => [...i ? ["\n"] : [], ...outputaddress(x, hostname, details.ip)]));
 					} else if (details.fromCache) {
 						const [{ details }] = arequest;
 						if (details.responseHeaders) {
@@ -979,6 +939,8 @@ function updateTable(requests) {
 		Promise.all(promises).then(() => {
 			document.getElementById("requests").replaceChildren(table);
 		});
+	} else {
+		document.getElementById("requests").textContent = "None";
 	}
 }
 
@@ -986,13 +948,13 @@ function updateTable(requests) {
  * Update popup.
  *
  * @param {number} tabId
- * @param {Object} tab
- * @param {Object} tab.details
- * @param {Object} tab.securityInfo
+ * @param {object} tab
+ * @param {object} tab.details
+ * @param {object} tab.securityInfo
  * @param {Map} tab.requests
  * @param {string} [tab.error]
  * @param {boolean} [tab.blocked]
- * @param {Object} [tab.performance]
+ * @param {object} [tab.performance]
  * @returns {void}
  */
 function updatePopup(tabId, tab) {
@@ -1002,46 +964,52 @@ function updatePopup(tabId, tab) {
 	document.getElementById("performance").textContent = "Loading…";
 
 	browser.tabs.sendMessage(tabId, { type: CONTENT }).then((message) => {
-		if (message.type === CONTENT) {
-			if (message.authors) {
-				document.getElementById("authors").textContent = formatter2.format(message.authors);
-				document.querySelector(".authors").classList.remove("hidden");
-			}
-			if (message.creators) {
-				document.getElementById("creators").textContent = formatter2.format(message.creators);
-				document.querySelector(".creators").classList.remove("hidden");
-			}
-			if (message.publishers) {
-				document.getElementById("publishers").textContent = formatter2.format(message.publishers);
-				document.querySelector(".publishers").classList.remove("hidden");
-			}
-			if (message.generators) {
-				document.getElementById("generators").textContent = formatter2.format(message.generators);
-				document.querySelector(".generators").classList.remove("hidden");
-			}
-			if (message.descriptions) {
-				const descriptions = document.getElementById("descriptions");
-				descriptions.title = message.descriptions.join("\n");
-				descriptions.innerHTML = formatter2.format(message.descriptions.map((description) => {
-					const q = document.createElement("q");
-					q.textContent = description;
-					return q.outerHTML;
-				}));
-				document.querySelector(".descriptions").classList.remove("hidden");
-			}
-
-			if (message.authors || message.creators || message.publishers || message.generators || message.descriptions) {
-				document.querySelector(".info").classList.remove("hidden");
-			}
-			// console.log(message);
+		if (message.type !== CONTENT) {
+			return;
 		}
-	}).catch(handleError);
+
+		if (message.authors) {
+			document.getElementById("authors").textContent = formatter2.format(message.authors);
+			document.querySelector(".authors").classList.remove("hidden");
+		}
+		if (message.creators) {
+			document.getElementById("creators").textContent = formatter2.format(message.creators);
+			document.querySelector(".creators").classList.remove("hidden");
+		}
+		if (message.publishers) {
+			document.getElementById("publishers").textContent = formatter2.format(message.publishers);
+			document.querySelector(".publishers").classList.remove("hidden");
+		}
+		if (message.generators) {
+			document.getElementById("generators").textContent = formatter2.format(message.generators);
+			document.querySelector(".generators").classList.remove("hidden");
+		}
+		if (message.descriptions) {
+			const descriptions = document.getElementById("descriptions");
+			descriptions.title = message.descriptions.join("\n");
+			descriptions.innerHTML = formatter2.format(message.descriptions.map((description) => {
+				const q = document.createElement("q");
+				q.textContent = description;
+				return q.outerHTML;
+			}));
+			document.querySelector(".descriptions").classList.remove("hidden");
+		}
+
+		if (message.authors || message.creators || message.publishers || message.generators || message.descriptions) {
+			document.querySelector(".info").classList.remove("hidden");
+		}
+		// console.log(message);
+	}).catch((error) => {
+		console.error(`Error: ${error}`);
+	});
 
 	browser.tabs.sendMessage(tabId, { type: PERFORMANCE }).then((message) => {
 		if (message.type === PERFORMANCE) {
 			// console.log(message);
 		}
-	}).catch(handleError).finally(() => {
+	}).catch((error) => {
+		console.error(`Error: ${error}`);
+	}).finally(() => {
 		document.querySelector(".no-performance").classList.add("hidden");
 	});
 	if (tab.performance) {
@@ -1049,15 +1017,15 @@ function updatePopup(tabId, tab) {
 	}
 
 	const url = new URL(details.url);
-	const ipv4 = IPv4RE.test(url.hostname);
-	const ipv6 = aIPv6RE.test(url.hostname);
+	const ipv4 = IPv4_RE.test(url.hostname);
+	const ipv6 = aIPv6_RE.test(url.hostname);
 
 	if (!running) {
 		running = true;
 
 		if (details.statusLine && (!details.ip || url.hostname !== details.ip) && !ipv4 && !ipv6) {
-			const ipv4 = details.ip && IPv4RE.test(details.ip);
-			const ipv6 = details.ip && IPv6RE.test(details.ip);
+			const ipv4 = details.ip && IPv4_RE.test(details.ip);
+			const ipv6 = details.ip && IPv6_RE.test(details.ip);
 			if (details.ip) {
 				if (ipv4) {
 					document.getElementById("ipv4").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
@@ -1083,14 +1051,22 @@ function updatePopup(tabId, tab) {
 			if (DNS) {
 				browser.dns.resolve(url.hostname, ["offline"]).then((record) => {
 					// console.log(record);
-					const { 4: ipv4s, 6: ipv6s } = Object.groupBy(record.addresses, (value) => IPv4RE.test(value) ? 4 : IPv6RE.test(value) ? 6 : null);
+					const ipv4s = [];
+					const ipv6s = [];
+					for (const address of record.addresses) {
+						if (IPv4_RE.test(address)) {
+							ipv4s.push(address);
+						} else if (IPv6_RE.test(address)) {
+							ipv6s.push(address);
+						}
+					}
 					console.assert(ipv4s.length + ipv6s.length === record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
-					if (ipv4s) {
+					if (ipv4s.length) {
 						document.getElementById("ipv4").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv4s, url.hostname, details.ip, true, false);
 						document.querySelector(".ipv4").classList.remove("hidden");
 					}
-					if (ipv6s) {
+					if (ipv6s.length) {
 						document.getElementById("ipv6").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv6s, url.hostname, details.ip, false, true);
 						document.querySelector(".ipv6").classList.remove("hidden");
 					}
@@ -1113,7 +1089,7 @@ function updatePopup(tabId, tab) {
 		}
 	}
 
-	document.getElementById("code").textContent = details.statusLine ? status(details.statusCode) : emojis.information_source;
+	document.getElementById("code").textContent = details.statusLine ? outputstatus(details.statusCode) : emojis.information_source;
 	document.getElementById("line").textContent = details.statusLine ? details.statusLine + (details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : "") : error ? "Error occurred for this page" : "Unavailable for this page";
 	document.getElementById("host").replaceChildren(...outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
 	if (details.responseHeaders) {
@@ -1144,9 +1120,9 @@ function updatePopup(tabId, tab) {
 			getGeoIP([details.ip]).then(([info]) => {
 				// console.log(details.ip, info);
 				if (info?.country) {
-					const text = `${outputlocation(info)}\u00A0${countryCode(info.country)}${info.lon == null ? "" : `\u00A0${earth(info.lon)}`}`;
+					const text = `${outputlocation(info)}\u{A0}${countryCode(info.country)}${info.lon == null ? "" : `\u{A0}${earth(info.lon)}`}`;
 					if (MAP && info.lat != null && info.lon != null) {
-						location.replaceChildren(`${text}\u00A0\u00A0`, ...map(info.lat, info.lon));
+						location.replaceChildren(`${text}\u{A0}\u{A0}`, ...map(info.lat, info.lon));
 					} else {
 						location.textContent = text;
 					}
@@ -1173,9 +1149,21 @@ function updatePopup(tabId, tab) {
 		}
 	}
 
+	if (SKEW && !details.fromCache && details.responseHeaders) {
+		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "date");
+		if (header) {
+			const date = document.getElementById("date");
+			const adate = new Date(header.value);
+			const duration = Math.trunc((details.timeStamp - adate.getTime()) / 1000);
+			date.title = dateTimeFormat1.format(adate);
+			date.textContent = outputduration(duration);
+			document.querySelector(".date").classList.remove("hidden");
+		}
+	}
+
 	if (details.statusLine || error) {
 		const { emoji, state } = getstate(tab);
-		document.getElementById("state").textContent = `${emoji.join("")}\u00A0${state}`;
+		document.getElementById("state").textContent = `${emoji.join("")}\u{A0}${state}`;
 
 		if (details.statusLine && securityInfo.state !== "insecure" && securityInfo.certificates.length) {
 			const [certificate] = securityInfo.certificates;
@@ -1212,7 +1200,7 @@ function updatePopup(tabId, tab) {
 			const date1 = new Date(start);
 			const date2 = new Date(end);
 			expiration.title = dateTimeFormat1.formatRange(date1, date2);
-			expiration.textContent = `${emoji ? `${emoji}\u00A0` : ""}${dateTimeFormat4.formatRange(date1, date2)}`;
+			expiration.textContent = `${emoji ? `${emoji}\u{A0}` : ""}${dateTimeFormat4.formatRange(date1, date2)}`;
 			if (timeoutID) {
 				clearTimeout(timeoutID);
 				timeoutID = null;
@@ -1224,7 +1212,7 @@ function updatePopup(tabId, tab) {
 			const protocol = document.getElementById("protocol");
 			protocol.title = securityInfo.cipherSuite;
 			protocol.textContent = `${securityInfo.protocolVersion}, ${securityInfo.secretKeyLength} bit keys`;
-			document.getElementById("ech").textContent = securityInfo.usedEch ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
+			document.getElementById("ech").textContent = securityInfo.usedEch ? `${emojis.heavy_check_mark}\u{A0}Yes` : `${certificateEmojis.cross_mark}\u{A0}No`;
 			const hsts = document.getElementById("hsts");
 			if (details.responseHeaders) {
 				// console.log(details.responseHeaders);
@@ -1234,13 +1222,13 @@ function updatePopup(tabId, tab) {
 					// console.log(header, aheader);
 					hsts.title = header.value;
 					// "preload" in aheader ? ", preloaded" : ""
-					hsts.textContent = "max-age" in aheader ? `${emojis.heavy_check_mark}\u00A0Yes\u00A0\u00A0(${outputseconds(Number.parseInt(aheader["max-age"], 10))})` : `${certificateEmojis.warning_sign}\u00A0Bad header`;
+					hsts.textContent = "max-age" in aheader ? `${emojis.heavy_check_mark}\u{A0}Yes\u{A0}\u{A0}(${outputseconds(Number.parseInt(aheader["max-age"], 10))})` : `${certificateEmojis.warning_sign}\u{A0}Bad header`;
 				} else {
-					hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
+					hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u{A0}Yes` : `${certificateEmojis.cross_mark}\u{A0}No`;
 				}
 				// console.assert(Boolean(header) === securityInfo.hsts, "Error: HSTS", url.hostname, header, securityInfo.hsts);
 			} else {
-				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u00A0Yes` : `${certificateEmojis.cross_mark}\u00A0No`;
+				hsts.textContent = securityInfo.hsts ? `${emojis.heavy_check_mark}\u{A0}Yes` : `${certificateEmojis.cross_mark}\u{A0}No`;
 			}
 
 			for (const element of document.querySelectorAll(".certificate")) {
@@ -1248,7 +1236,7 @@ function updatePopup(tabId, tab) {
 			}
 		}
 	} else {
-		document.getElementById("state").textContent = blocked ? `${certificateEmojis.shield}\u00A0Blocked by the browser or another add-on` : `${emojis.hourglass_with_flowing_sand}\u00A0Waiting for the connection to complete…`;
+		document.getElementById("state").textContent = blocked ? `${certificateEmojis.shield}\u{A0}Blocked by the browser or another add-on` : `${emojis.hourglass_with_flowing_sand}\u{A0}Waiting for the connection to complete…`;
 	}
 
 	document.querySelector(".no-data").classList.add("hidden");
@@ -1270,47 +1258,52 @@ function updatePopup(tabId, tab) {
  */
 function getstatus(tabId) {
 	browser.runtime.sendMessage({ type: POPUP, tabId }).then((message) => {
-		if (message.type === POPUP) {
-			const data = document.getElementById("data");
-
-			if (message.tab) {
-				if (message.tab.details) {
-					({
-						WARNDAYS,
-						FULLIPv6,
-						COMPACTIPv6,
-						OPEN,
-						BLOCKED,
-						HTTPS,
-						DNS,
-						BLACKLIST,
-						DOMAINBLACKLISTS,
-						IPv4BLACKLISTS,
-						IPv6BLACKLISTS,
-						SUFFIX,
-						suffixes_pattern,
-						exceptions_pattern,
-						GeoDB,
-						MAP,
-						LOOKUPIP,
-						LOOKUPHOST,
-						SEND,
-						COLUMNS
-					} = message);
-
-					updatePopup(tabId, message.tab);
-				} else {
-					data.innerText = `${emojis.information_source} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS webpages.`;
-					console.debug("Unavailable or Access denied", message);
-				}
-			} else {
-				data.textContent = `${emojis.information_source} Unavailable for this page.`;
-				// console.log(`Error: ${tabId}`);
-				console.debug("Unavailable", message);
-			}
-			// console.log(message);
+		if (message.type !== POPUP) {
+			return;
 		}
-	}, handleError);
+
+		const data = document.getElementById("data");
+
+		if (message.tab) {
+			if (message.tab.details) {
+				({
+					WARNDAYS,
+					FULLIPv6,
+					COMPACTIPv6,
+					OPEN,
+					BLOCKED,
+					HTTPS,
+					DNS,
+					SKEW,
+					BLACKLIST,
+					DOMAINBLACKLISTS,
+					IPv4BLACKLISTS,
+					IPv6BLACKLISTS,
+					SUFFIX,
+					suffixes_pattern,
+					exceptions_pattern,
+					GeoDB,
+					MAP,
+					LOOKUPIP,
+					LOOKUPHOST,
+					SEND,
+					COLUMNS
+				} = message);
+
+				updatePopup(tabId, message.tab);
+			} else {
+				data.innerText = `${emojis.information_source} Unavailable or Access denied for this page.\nNote that this add-on only works on standard HTTP/HTTPS webpages.`;
+				console.debug("Unavailable or Access denied", message);
+			}
+		} else {
+			data.textContent = `${emojis.information_source} Unavailable for this page.`;
+			// console.log(`Error: ${tabId}`);
+			console.debug("Unavailable", message);
+		}
+		// console.log(message);
+	}, (error) => {
+		console.error(`Error: ${error}`);
+	});
 }
 
 document.getElementById("settings").addEventListener("click", (event) => {
@@ -1330,7 +1323,7 @@ document.getElementById("settings").addEventListener("click", (event) => {
 async function init() {
 	const platformInfo = await browser.runtime.getPlatformInfo();
 
-	pasteSymbol = platformInfo.os === "mac" ? "\u2318" : "Ctrl";
+	pasteSymbol = platformInfo.os === "mac" ? "\u{2318}" : "Ctrl";
 }
 
 init();
@@ -1375,16 +1368,18 @@ browser.runtime.onMessage.addListener((message, sender) => {
 });
 
 browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-	if (tabs[0]) {
-		tabId = tabs[0].id;
+	if (!tabs[0]) {
+		return;
+	}
 
-		const data = document.getElementById("data");
+	tabId = tabs[0].id;
 
-		if (tabId && tabId !== TAB_ID_NONE) {
-			data.textContent = "Loading…";
-			getstatus(tabId);
-		} else {
-			data.textContent = `${emojis.information_source} Unavailable for this page.`;
-		}
+	const data = document.getElementById("data");
+
+	if (tabId && tabId !== TAB_ID_NONE) {
+		data.textContent = "Loading…";
+		getstatus(tabId);
+	} else {
+		data.textContent = `${emojis.information_source} Unavailable for this page.`;
 	}
 });

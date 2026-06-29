@@ -10,7 +10,8 @@ table {
 
 td,
 th {
-	border: 2px solid;
+	border-top: 1px solid;
+	padding: 4px 4px;
 }
 
 td.host {
@@ -20,6 +21,11 @@ td.host {
 
 .hidden {
 	display: none;
+}
+
+.toolbar {
+	text-align: center;
+	margin-bottom: 8px;
 }
 
 a.button {

@@ -116,12 +116,12 @@ export const regionNames = new Intl.DisplayNames([], { type: "region" });
 
 // IPv4 address regular expression
 const IPv4 = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?\d)?\d)\.){3}(?:25[0-5]|(?:2[0-4]|[01]?\d)?\d)`;
-export const IPv4RE = new RegExp(`^${IPv4}$`, "u");
+export const IPv4_RE = new RegExp(`^${IPv4}$`, "u");
 
 // IPv6 address regular expression
 // \p{ASCII_Hex_Digit}
 export const IPv6 = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|\p{AHex}{0,4}::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::\p{AHex}{1,4}:|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)`;
-export const IPv6RE = new RegExp(`^${IPv6}$`, "u");
+export const IPv6_RE = new RegExp(`^${IPv6}$`, "u");
 
 /**
  * Auto-scale number to unit.
@@ -132,8 +132,6 @@ export const IPv6RE = new RegExp(`^${IPv6}$`, "u");
  * @returns {string}
  */
 export function outputunit(number, scale) {
-	let str;
-
 	const scale_base = scale ? 1000 : 1024;
 
 	let power = 0;
@@ -145,10 +143,12 @@ export function outputunit(number, scale) {
 	let anumber = Math.abs(number);
 	anumber += anumber < 10 ? 0.0005 : anumber < 100 ? 0.005 : anumber < 1000 ? 0.05 : 0.5;
 
+	let str;
+
 	if (number !== 0 && anumber < 1000 && power > 0) {
 		str = numberFormat.format(number);
 
-		const length = 5 + (number < 0 ? 1 : 0);
+		const length = 5 + (number < 0);
 		if (str.length > length) {
 			const prec = anumber < 10 ? 3 : anumber < 100 ? 2 : 1;
 			str = number.toLocaleString([], { maximumFractionDigits: prec });
@@ -158,7 +158,7 @@ export function outputunit(number, scale) {
 	}
 
 	if (power > 0) {
-		str += `\u00A0${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
+		str += `\u{A0}${power < suffix_power_char.length ? suffix_power_char[power] : "(error)"}`;
 
 		if (!scale) {
 			str += "i";
@@ -277,6 +277,28 @@ export function outputdateRange(date1, date2) {
 	return dateTimeFormat4.formatRange(new Date(date1), new Date(date2));
 }
 
+
+/**
+ * Convert HTTP statue code to emoji.
+ *
+ * @param {number} statusCode
+ * @returns {string}
+ */
+export function outputstatus(statusCode) {
+	let emoji;
+	if (statusCode >= 100 && statusCode < 200) {
+		emoji = statusEmojis.large_blue_square;
+	} else if (statusCode >= 200 && statusCode < 300) {
+		emoji = statusEmojis.large_green_square;
+	} else if (statusCode >= 300 && statusCode < 400) {
+		emoji = statusEmojis.large_yellow_square;
+	} else {
+		// I'm a teapot, RFC 2324: https://datatracker.ietf.org/doc/html/rfc2324
+		emoji = statusCode === 418 ? statusEmojis.teapot : statusEmojis.large_red_square;
+	}
+	return emoji;
+}
+
 /**
  * Output location.
  *
@@ -340,7 +362,7 @@ export function getHSTS(header) {
 /**
  * Get security error message.
  *
- * @param {Object} securityInfo
+ * @param {object} securityInfo
  * @returns {string}
  */
 export function getmessage(securityInfo) {
