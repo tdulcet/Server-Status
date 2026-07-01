@@ -131,15 +131,27 @@ function timerTick(time) {
 }
 
 /**
- * Output time in milliseconds.
+ * Output duration in milliseconds.
  *
  * @param {number} msec
  * @returns {string}
  */
-function outputmsec(msec) {
+function outputmsduration(msec) {
 	const seconds = Math.trunc(msec / 1000);
 	const milliseconds = msec % 1000;
 	return durationFormat.format({ seconds, milliseconds }) || numberFormat5.format(milliseconds);
+}
+
+/**
+ * Output time in milliseconds.
+ *
+ * @param {number} msec
+ * @param {HTMLElement} element
+ * @returns {void}
+ */
+function outputms(msec, element) {
+	element.title = outputmsduration(msec);
+	element.textContent = numberFormat6.format(msec);
 }
 
 /**
@@ -585,25 +597,62 @@ function updateTransfer({ requestSize, responseSize }) {
 function updatePerformance(performance) {
 	const [navigation] = performance.navigation;
 	const start = navigation.redirectCount ? navigation.redirectStart : navigation.fetchStart;
-	const load = navigation.loadEventStart - start;
-	const aload = document.getElementById("load");
-	aload.title = outputmsec(load);
-	aload.textContent = numberFormat6.format(load);
+	outputms(navigation.loadEventStart - start, document.getElementById("load"));
 
-	const ttfb = navigation.responseStart - start;
-	const attfb = document.getElementById("ttfb");
-	attfb.title = outputmsec(ttfb);
-	attfb.textContent = numberFormat6.format(ttfb);
+	outputms(navigation.responseStart - start, document.getElementById("ttfb"));
+
+	const redirection = navigation.redirectCount ? navigation.redirectEnd - navigation.redirectStart : null;
+	const redirect = document.getElementById("redirect");
+	redirect.title = navigation.redirectCount ? outputmsduration(redirection) : "";
+	redirect.textContent = navigation.redirectCount ? numberFormat6.format(redirection) : "None";
+
+	outputms(navigation.fetchStart - navigation.workerStart, document.getElementById("worker"));
+	outputms(navigation.domainLookupEnd - navigation.domainLookupStart, document.getElementById("lookup"));
+	outputms(navigation.connectEnd - navigation.connectStart, document.getElementById("connect"));
+	outputms(navigation.responseStart - navigation.requestStart, document.getElementById("request"));
+	outputms(navigation.responseEnd - navigation.responseStart, document.getElementById("response"));
+	outputms(navigation.domInteractive - navigation.responseEnd, document.getElementById("parse"));
+	outputms(navigation.domContentLoadedEventStart - navigation.domInteractive, document.getElementById("scripts"));
+	outputms(navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart, document.getElementById("loaded"));
+	outputms(navigation.domComplete - navigation.domContentLoadedEventEnd, document.getElementById("sub-resources"));
+	// outputms(navigation.loadEventEnd - navigation.loadEventStart, document.getElementById("load"));
+
+	if (navigation.serverTiming.length) {
+		const table = document.createElement("table");
+
+		for (const entry of navigation.serverTiming) {
+			const row = table.insertRow();
+
+			{
+				const cell = row.insertCell();
+				cell.title = entry.description;
+				const code = document.createElement("code");
+				code.textContent = entry.name;
+				cell.append(code);
+			}
+
+			{
+				const cell = row.insertCell();
+				cell.textContent = numberFormat.format(entry.duration);
+			}
+		}
+
+		document.getElementById("number-server-times").textContent = numberFormat.format(table.rows.length);
+
+		document.getElementById("server-times").replaceChildren(table);
+	} else {
+		document.getElementById("server-times").textContent = "None";
+	}
 
 	const fcp = performance.paint?.find((x) => x.name === "first-contentful-paint");
 	const apaint = document.getElementById("paint");
-	apaint.title = fcp ? outputmsec(fcp.startTime) : "";
+	apaint.title = fcp ? outputmsduration(fcp.startTime) : "";
 	apaint.textContent = fcp ? numberFormat6.format(fcp.startTime) : "None";
 
 	if (PerformanceObserver.supportedEntryTypes.includes("largest-contentful-paint")) {
 		const lcp = performance.lcp?.at(-1);
 		const alcp = document.getElementById("lcp");
-		alcp.title = lcp ? outputmsec(lcp.startTime) : "";
+		alcp.title = lcp ? outputmsduration(lcp.startTime) : "";
 		alcp.textContent = lcp ? numberFormat6.format(lcp.startTime) : "None";
 		document.querySelector(".lcp").classList.remove("hidden");
 	}
@@ -934,7 +983,7 @@ function updateTable(requests) {
 			}
 		}
 
-		document.getElementById("number").textContent = numberFormat.format(table.rows.length);
+		document.getElementById("number-requests").textContent = numberFormat.format(table.rows.length);
 
 		Promise.all(promises).then(() => {
 			document.getElementById("requests").replaceChildren(table);

@@ -12,8 +12,8 @@
 
 <body>
 	<!-- <h3>Server Status</h3> -->
-	<div class="toolbar"><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button
-				type="button">ℹ️ Information</button></a>
+	<div class="toolbar"><a href="https://github.com/tdulcet/Server-Status" target="_blank"><button type="button">ℹ️
+				Information</button></a>
 		<button type="button" id="settings">⚙️ Settings</button>
 		<a href="https://tealdulcet.com/#donate" target="_blank"><button type="button">❤️ Donate</button></a>
 	</div>
@@ -58,7 +58,8 @@
 			<tr>
 				<td>
 					<details id="details">
-						<summary>⇅ Requests <span id="number"></span> (click to show)</summary>
+						<summary title="Click to show">⇅ Requests <span id="number-requests"></span> (click to show)
+						</summary>
 						<span id="requests">None</span>
 					</details>
 				</td>
@@ -67,8 +68,63 @@
 				<td id="performance"></td>
 			</tr>
 			<tr class="performance hidden">
-				<td><span title="Load time">⏱️</span>&nbsp;Load time: <span id="load"></span>, <abbr
-						title="Time to first byte">TTFB</abbr>: <span id="ttfb"></span><br>
+				<td>
+					<details>
+						<summary title="Click to show more"><span title="Load time">⏱️</span>&nbsp;Load time: <span
+								id="load"></span>, <abbr title="Time to first byte">TTFB</abbr>: <span id="ttfb"></span>
+						</summary>
+						<table>
+							<tr>
+								<td>Redirection</td>
+								<td id="redirect"></td>
+							</tr>
+							<tr>
+								<td>ServiceWorker processing</td>
+								<td id="worker"></td>
+							</tr>
+							<tr>
+								<td>DNS lookup</td>
+								<td id="lookup"></td>
+							</tr>
+							<tr>
+								<td>Connect/TCP handshake</td>
+								<td id="connect"></td>
+							</tr>
+							<tr>
+								<td>Request</td>
+								<td id="request"></td>
+							</tr>
+							<tr>
+								<td>Response</td>
+								<td id="response"></td>
+							</tr>
+							<tr>
+								<td>Parse HTML</td>
+								<td id="parse"></td>
+							</tr>
+							<tr>
+								<td>Execute scripts</td>
+								<td id="scripts"></td>
+							</tr>
+							<tr>
+								<td><code>DOMContentLoaded</code> event</td>
+								<td id="loaded"></td>
+							</tr>
+							<tr>
+								<td>Sub-Resources</td>
+								<td id="sub-resources"></td>
+							</tr>
+							<!-- <tr>
+								<td>Load event</td>
+								<td id="load"></td>
+							</tr> -->
+						</table>
+						<details>
+							<summary title="Click to show">Server timings <span id="number-server-times"></span> (click
+								to show)</summary>
+							<span id="server-times">None</span>
+						</details>
+					</details>
 					<span title="First paint">🖌️</span>&nbsp;First paint: <span id="paint"></span><span
 						class="lcp hidden">, <abbr title="Largest Contentful Paint">LCP</abbr>: <span
 							id="lcp"></span></span>

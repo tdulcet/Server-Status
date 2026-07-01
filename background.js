@@ -4,8 +4,6 @@ import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis,
 
 import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 
-// import * as common from "common.js";
-
 const TITLE = "Server Status";
 const label = "PSL";
 
