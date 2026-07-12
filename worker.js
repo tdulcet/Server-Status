@@ -2,12 +2,13 @@
 
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1247687
 // importScripts("common.js");
-import { BACKGROUND, NOTIFICATION, LOCATION, WORKER, dateTimeFormat4, numberFormat, IPv4_RE, IPv6_RE, outputunit, expand, IPv4toInt, IPv6toInt, outputseconds, delay } from "/common.js";
+import { BACKGROUND, NOTIFICATION, LOCATION, WORKER, dateTimeFormat4, numberFormat, IPv4_RE, IPv6_RE, outputunit, ipv4toint, ipv6toint, outputseconds, delay } from "/common.js";
 
 const label = "GeoIPv";
 
 const settings = {
-	GeoDB: null
+	GeoDB: null,
+	nat64prefixes: null
 };
 
 let GeoIPv4 = null;
@@ -359,16 +360,15 @@ function searchGeoIP(GeoIP, address) {
 function getGeoIP(address) {
 	if (GeoIPv4 && GeoIPv6) {
 		if (IPv4_RE.test(address)) {
-			return searchGeoIP(GeoIPv4, IPv4toInt(address));
+			return searchGeoIP(GeoIPv4, ipv4toint(address));
 		}
 		if (IPv6_RE.test(address)) {
-			address = expand(address.toLowerCase()).join("");
-			// IPv4-mapped, IPv4-compatible and IPv4-embedded IPv6 addresses
-			if (address.startsWith("00000000000000000000ffff") || address.startsWith("000000000000000000000000") || address.startsWith("0064ff9b")) {
-				return searchGeoIP(GeoIPv4, Number.parseInt(address.slice(-8), 16));
+			const ipv6 = ipv6toint(address);
+			if (settings.nat64prefixes.has(ipv6 >> 32n)) {
+				return searchGeoIP(GeoIPv4, Number(ipv6 & 0xFFFFFFFFn));
 			}
 
-			return searchGeoIP(GeoIPv6, IPv6toInt(address));
+			return searchGeoIP(GeoIPv6, ipv6);
 		}
 	}
 
@@ -385,6 +385,7 @@ function setSettings(message) {
 	const asettings = message;
 
 	settings.GeoDB = asettings.GeoDB;
+	settings.nat64prefixes = asettings.nat64prefixes;
 
 	if (settings.GeoDB) {
 		const { GEOIP } = message;

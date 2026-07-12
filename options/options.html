@@ -504,6 +504,14 @@
 
 				<li>
 					<div class="line">
+						<label for="nat64prefix">Custom NAT64 /96 prefix</label>
+						<input class="setting save-on-change" type="text" id="nat64prefix" data-optiongroup="settings" name="nat64prefix">
+					</div>
+					<span class="line indent helper-text">The well-known prefixes <code>::ffff:0:0/96</code>, <code>::/96</code> and <code>64:ff9b::/96</code> are always included.</span>
+				</li>
+
+				<li>
+					<div class="line">
 						<input class="setting save-on-change" type="checkbox" id="skew" data-optiongroup="settings" name="skew">
 						<label for="skew">Show server clock skew</label>
 					</div>

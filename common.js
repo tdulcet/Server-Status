@@ -194,16 +194,12 @@ export function outputbase85(number) {
  * @param {string} address
  * @returns {string[]}
  */
-export function expand(address) {
-	const blocks = address.split(":");
-	for (const [i, block] of blocks.entries()) {
-		if (block.length === 0) {
-			blocks.splice(i, 1, ...new Array(9 - blocks.length).fill("0000"));
-		} else {
-			blocks[i] = block.padStart(4, "0");
-		}
-	}
-	return blocks;
+export function expandipv6(address) {
+	const [left, right] = address.split("::", 1);
+	const leftBlocks = left ? left.split(":") : [];
+	const rightBlocks = right ? right.split(":") : [];
+
+	return [...leftBlocks, ...new Array(8 - leftBlocks.length - rightBlocks.length).fill("0"), ...rightBlocks].map((block) => block.padStart(4, "0"));
 }
 
 /**
@@ -212,7 +208,7 @@ export function expand(address) {
  * @param {string} address
  * @returns {number}
  */
-export function IPv4toInt(address) {
+export function ipv4toint(address) {
 	const octets = address.split(".").map((x) => Number.parseInt(x, 10));
 	return (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3] >>> 0;
 }
@@ -223,8 +219,30 @@ export function IPv4toInt(address) {
  * @param {string} address
  * @returns {bigint}
  */
-export function IPv6toInt(address) {
-	return BigInt(`0x${address}`);
+export function ipv6toint(address) {
+	return BigInt(`0x${expandipv6(address).join("")}`);
+}
+
+/**
+ * Convert integer to IPv4 address.
+ *
+ * @param {bigint} address
+ * @returns {string}
+ */
+export function inttoipv4(address) {
+	const number = Number(address & 0xFFFFFFFFn);
+	return [number >>> 24 & 0xFF, number >>> 16 & 0xFF, number >>> 8 & 0xFF, number & 0xFF].join(".");
+}
+
+/**
+ * Convert IPv6 to IPv4-embedded IPv6 address.
+ *
+ * @param {string} address
+ * @param {bigint} number
+ * @returns {string}
+ */
+export function embeddedipv6(address, number) {
+	return address.replace(/(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?$/u, inttoipv4(number));
 }
 
 /**

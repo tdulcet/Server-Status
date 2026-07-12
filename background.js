@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4_RE, IPv6_RE, outputbase85, expand, IPv6toInt, outputseconds, outputstatus, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode, delay } from "/common.js";
+import { POPUP, PERFORMANCE, BACKGROUND, NOTIFICATION, LOCATION, WORKER, emojis, certificateEmojis, statusEmojis, digitEmojis, status_codes, dateTimeFormat4, numberFormat, rtf, regionNames, IPv4_RE, IPv6_RE, outputbase85, expandipv6, ipv6toint, embeddedipv6, outputseconds, outputstatus, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode, delay } from "/common.js";
 
 import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 
@@ -29,6 +29,8 @@ const settings = {
 	skew: null,
 	fullipv6: null,
 	compactipv6: null,
+	nat64prefix: null,
+	nat64prefixes: null,
 	blocked: null,
 	GeoDB: null,
 	update: null,
@@ -238,26 +240,39 @@ async function updateIcon(tabId, tab) {
 	title.push(`𝗦𝘁𝗮𝘁𝘂𝘀:  ${outputstatus(statusCode)} ${details.statusLine}${statusCode in status_codes ? `  (${status_codes[statusCode]})` : ""}`); // Status
 
 	if (details.ip) {
-		const ipv4 = IPv4_RE.test(details.ip);
-		const ipv6 = IPv6_RE.test(details.ip);
+		let ipv4 = IPv4_RE.test(details.ip);
+		let ipv6 = IPv6_RE.test(details.ip);
+		let embedded = false;
+		const aipv6 = ipv6 && ipv6toint(details.ip);
+		if (ipv6) {
+			if (settings.nat64prefixes.has(aipv6 >> 32n)) {
+				ipv4 = true;
+				ipv6 = false;
+				embedded = true;
+			}
+		}
 		console.assert(ipv4 || ipv6, "Error: Unknown IP address", details.ip);
-		if (ipv4) {
+
+		if (ipv6) {
+			// IPv6 address
+			title.push(`𝗜𝗣𝘃𝟲 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${securityInfo.usedPrivateDns ? certificateEmojis.shield : ""}${settings.fullipv6 ? expandipv6(details.ip).join(":") : settings.compactipv6 ? outputbase85(aipv6) : details.ip}`);
+		} else if (embedded) {
+			// IPv4-embedded IPv6 address
+			title.push(`𝗜𝗣𝘃𝟰-𝗲𝗺𝗯𝗲𝗱𝗱𝗲𝗱 𝗜𝗣𝘃𝟲 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${securityInfo.usedPrivateDns ? certificateEmojis.shield : ""}${settings.fullipv6 ? embeddedipv6(expandipv6(details.ip).join(":"), aipv6) : settings.compactipv6 ? outputbase85(aipv6) : embeddedipv6(details.ip, aipv6)}`);
+		} else if (ipv4) {
 			// IPv4 address
 			title.push(`𝗜𝗣𝘃𝟰 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${securityInfo.usedPrivateDns ? certificateEmojis.shield : ""}${details.ip}`);
-		} else if (ipv6) {
-			// IPv6 address
-			title.push(`𝗜𝗣𝘃𝟲 𝗮𝗱𝗱𝗿𝗲𝘀𝘀:  ${securityInfo.usedPrivateDns ? certificateEmojis.shield : ""}${settings.fullipv6 ? expand(details.ip).join(":") : settings.compactipv6 ? outputbase85(IPv6toInt(expand(details.ip).join(""))) : details.ip}`);
 		}
 
 		if (settings.icon === 6) {
-			if (ipv4) {
-				icon = digitIcons[4];
-				text = "v4";
-				backgroundColor = "red";
-			} else if (ipv6) {
+			if (ipv6) {
 				icon = digitIcons[6];
 				text = "v6";
 				backgroundColor = "green";
+			} else if (ipv4) {
+				icon = digitIcons[4];
+				text = "v4";
+				backgroundColor = "red";
 			}
 		}
 	} else if (settings.icon === 6) {
@@ -1178,6 +1193,16 @@ function setSettings(asettings) {
 		browser.alarms.clear(ALARM1);
 	}
 
+	// IPv4-mapped, IPv4-compatible and IPv4-embedded IPv6 addresses
+	settings.nat64prefixes = new Set([0xFFFFn, 0n, 0x0064FF9B0000000000000000n]);
+	if (asettings.nat64prefix) {
+		if (IPv6_RE.test(asettings.nat64prefix)) {
+			settings.nat64prefixes.add(ipv6toint(asettings.nat64prefix) >> 32n);
+		} else {
+			console.error("NAT64 prefix is not a valid IPv6 address:", asettings.nat64prefix);
+		}
+	}
+
 	if (GeoDB) {
 		const convert = { 6: 3, 7: 4, 8: 5 };
 		// navigator.deviceMemory < 8
@@ -1186,8 +1211,9 @@ function setSettings(asettings) {
 			GeoDB = convert[GeoDB];
 		}
 
-		if (GeoDB !== settings.GeoDB) {
+		if (GeoDB !== settings.GeoDB || asettings.nat64prefix != settings.nat64prefix) {
 			settings.GeoDB = GeoDB;
+			settings.nat64prefix = asettings.nat64prefix;
 
 			setIcon(null, icons.hourglass_with_flowing_sand, `${TITLE}  \nProcessing geolocation databases`, null, null);
 
@@ -1230,7 +1256,8 @@ function setSettings(asettings) {
 				const message = {
 					type: BACKGROUND,
 					GeoDB: settings.GeoDB,
-					languages: await browser.i18n.getAcceptLanguages()
+					languages: await browser.i18n.getAcceptLanguages(),
+					nat64prefixes: settings.nat64prefixes
 				};
 
 				if (GEOIP && GEOIP.GeoDB === settings.GeoDB) {
@@ -1306,6 +1333,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
 				WARNDAYS: settings.warndays,
 				FULLIPv6: settings.fullipv6,
 				COMPACTIPv6: settings.compactipv6,
+				NAT64PREFIXES: settings.nat64prefixes,
 				OPEN: settings.open,
 				BLOCKED: settings.blocked,
 				HTTPS: settings.https || httpsOnlyMode === "always" || httpsOnlyMode === "private_browsing" && tab.details.incognito,

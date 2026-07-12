@@ -22,6 +22,7 @@ const defaultSettings = {
 		skew: false,
 		fullipv6: false,
 		compactipv6: false,
+		nat64prefix: "64:ff9b::",
 		blocked: true,
 		GeoDB: "7",
 		update: "1",

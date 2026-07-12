@@ -1,6 +1,6 @@
 "use strict";
 
-import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, statusEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4_RE, IPv6, IPv6_RE, outputunit, outputbase85, expand, IPv6toInt, outputseconds, outputdate, outputdateRange, outputstatus, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode } from "/common.js";
+import { POPUP, CONTENT, PERFORMANCE, LOCATION, emojis, certificateEmojis, status_codes, dateTimeFormat1, dateTimeFormat3, dateTimeFormat4, numberFormat4, numberFormat5, numberFormat6, numberFormat, rtf, regionNames, IPv4_RE, IPv6, IPv6_RE, outputunit, outputbase85, expandipv6, ipv6toint, inttoipv4, embeddedipv6, outputseconds, outputdate, outputdateRange, outputstatus, outputlocation, earth, getcertname, getHSTS, getmessage, countryCode } from "/common.js";
 
 const { TAB_ID_NONE } = browser.tabs;
 
@@ -15,6 +15,7 @@ let OPEN = true;
 let BLOCKED = true;
 let FULLIPv6 = false;
 let COMPACTIPv6 = false;
+let NAT64PREFIXES = new Set();
 let HTTPS = false;
 let SUFFIX = true;
 let GeoDB = 1;
@@ -260,17 +261,31 @@ function lookuphost(hostname) {
  * @param {string} address
  * @param {string} hostname
  * @param {string|null} [current]
- * @param {boolean} [ipv4]
- * @param {boolean} [ipv6]
  * @returns {Array.<HTMLElement|string>}
  */
-function outputaddress(address, hostname, current, ipv4, ipv6) {
-	ipv4 ??= IPv4_RE.test(address);
-	ipv6 ??= IPv6_RE.test(address);
+function outputaddress(address, hostname, current) {
+	let ipv4 = IPv4_RE.test(address);
+	let ipv6 = IPv6_RE.test(address);
+	let embedded = false;
+	const aipv6 = ipv6 && ipv6toint(address);
+	if (ipv6) {
+		if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+			ipv4 = true;
+			ipv6 = false;
+			embedded = true;
+		}
+	}
 	console.assert(ipv4 || ipv6, "Error: Unknown IP address", address);
 
-	const aaddress = ipv6 ? FULLIPv6 ? expand(address).join(":") : COMPACTIPv6 ? outputbase85(IPv6toInt(expand(address).join(""))) : address : address;
-	const a = createlink(`http${HTTPS ? "s" : ""}://${ipv6 ? `[${address}]` : address}`);
+	let aaddress;
+	if (ipv6) {
+		aaddress = FULLIPv6 ? expandipv6(address).join(":") : COMPACTIPv6 ? outputbase85(aipv6) : address;
+	} else if (embedded) {
+		aaddress = FULLIPv6 ? embeddedipv6(expandipv6(address).join(":"), aipv6) : COMPACTIPv6 ? outputbase85(aipv6) : embeddedipv6(address, aipv6);
+	} else if (ipv4) {
+		aaddress = address;
+	}
+	const a = createlink(`http${HTTPS ? "s" : ""}://${ipv6 || embedded ? `[${address}]` : address}`);
 	if (address === current) {
 		const strong = document.createElement("strong");
 		strong.textContent = aaddress;
@@ -292,14 +307,12 @@ function outputaddress(address, hostname, current, ipv4, ipv6) {
  * @param {string[]} addresses
  * @param {string} hostname
  * @param {string} current
- * @param {boolean} ipv4
- * @param {boolean} ipv6
  * @returns {string}
  */
-function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
+function outputaddresses(addresses, hostname, current) {
 	return formatter2.format(addresses.map((x) => {
 		const span = document.createElement("span");
-		span.append(...outputaddress(x, hostname, current, ipv4, ipv6));
+		span.append(...outputaddress(x, hostname, current));
 		return span.innerHTML;
 	}));
 	// .join(', ')
@@ -310,13 +323,19 @@ function outputaddresses(addresses, hostname, current, ipv4, ipv6) {
  *
  * @param {string} hostname
  * @param {string} protocol
- * @param {boolean} [ipv4]
- * @param {boolean} [ipv6]
  * @returns {Array.<HTMLElement|string>}
  */
-function outputhost(hostname, protocol, ipv4, ipv6) {
-	ipv4 ??= IPv4_RE.test(hostname);
-	ipv6 ??= aIPv6_RE.test(hostname);
+function outputhost(hostname, protocol) {
+	let ipv4 = IPv4_RE.test(hostname);
+	let ipv6 = aIPv6_RE.test(hostname);
+	if (ipv6) {
+		const aipv6 = ipv6toint(hostname.slice(1, -1));
+		if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+			ipv4 = true;
+			ipv6 = false;
+			hostname = `[${embeddedipv6(hostname.slice(1, -1), aipv6)}]`;
+		}
+	}
 
 	if (SUFFIX && suffixes_pattern && !ipv4 && !ipv6) {
 		const suffixResult = suffixes_pattern.exec(hostname);
@@ -457,13 +476,38 @@ function checkblacklist(domain, blacklist, address) {
  * Check Blacklists.
  *
  * @param {string} hostname
- * @param {string[]} [ipv4s]
- * @param {string[]} [ipv6s]
+ * @param {string[]|null} [addresses]
  * @returns {Promise<void>}
  */
-async function checkblacklists(hostname, ipv4s, ipv6s) {
-	const ipv4 = IPv4_RE.test(hostname);
-	const ipv6 = aIPv6_RE.test(hostname);
+async function checkblacklists(hostname, addresses) {
+	let ipv4 = IPv4_RE.test(hostname);
+	let ipv6 = aIPv6_RE.test(hostname);
+	if (ipv6) {
+		const aipv6 = ipv6toint(hostname.slice(1, -1));
+		if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+			ipv4 = true;
+			ipv6 = false;
+			hostname = inttoipv4(aipv6);
+		}
+	}
+
+	const ipv4s = [];
+	const ipv6s = [];
+	if (addresses) {
+		for (const address of addresses) {
+			if (IPv4_RE.test(address)) {
+				ipv4s.push(address);
+			} else if (IPv6_RE.test(address)) {
+				const aipv6 = ipv6toint(address);
+				if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+					ipv4s.push(inttoipv4(aipv6));
+				} else {
+					ipv6s.push(address);
+				}
+			}
+		}
+	}
+
 	// Check Domain Blacklists
 	if (!ipv4 && !ipv6) {
 		for (const bl of DOMAINBLACKLISTS) {
@@ -475,7 +519,7 @@ async function checkblacklists(hostname, ipv4s, ipv6s) {
 		let addresses = [];
 		if (ipv4) {
 			addresses = [hostname];
-		} else if (ipv4s) {
+		} else if (ipv4s.length) {
 			addresses = ipv4s;
 		}
 		for (const address of addresses) {
@@ -491,12 +535,12 @@ async function checkblacklists(hostname, ipv4s, ipv6s) {
 		let addresses = [];
 		if (ipv6) {
 			addresses = [hostname.slice(1, -1)];
-		} else if (ipv6s) {
+		} else if (ipv6s.length) {
 			addresses = ipv6s;
 		}
 		for (const address of addresses) {
 			// Expand and reverse IPv6 address
-			const reverse = expand(address).join("").split("").reverse().join(".");
+			const reverse = expandipv6(address).join("").split("").reverse().join(".");
 			for (const bl of IPv6BLACKLISTS) {
 				await checkblacklist(`${reverse}.${bl}`, bl, address);
 			}
@@ -1066,22 +1110,37 @@ function updatePopup(tabId, tab) {
 	}
 
 	const url = new URL(details.url);
-	const ipv4 = IPv4_RE.test(url.hostname);
-	const ipv6 = aIPv6_RE.test(url.hostname);
+	let ipv4 = IPv4_RE.test(url.hostname);
+	let ipv6 = aIPv6_RE.test(url.hostname);
+	if (ipv6) {
+		const aipv6 = ipv6toint(url.hostname.slice(1, -1));
+		if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+			ipv4 = true;
+			ipv6 = false;
+		}
+	}
 
 	if (!running) {
 		running = true;
 
 		if (details.statusLine && (!details.ip || url.hostname !== details.ip) && !ipv4 && !ipv6) {
-			const ipv4 = details.ip && IPv4_RE.test(details.ip);
-			const ipv6 = details.ip && IPv6_RE.test(details.ip);
 			if (details.ip) {
-				if (ipv4) {
-					document.getElementById("ipv4").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
-					document.querySelector(".ipv4").classList.remove("hidden");
-				} else if (ipv6) {
-					document.getElementById("ipv6").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname, null, ipv4, ipv6));
+				let ipv4 = IPv4_RE.test(details.ip);
+				let ipv6 = IPv6_RE.test(details.ip);
+				if (ipv6) {
+					const aipv6 = ipv6toint(details.ip);
+					if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+						ipv4 = true;
+						ipv6 = false;
+					}
+				}
+
+				if (ipv6) {
+					document.getElementById("ipv6").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname));
 					document.querySelector(".ipv6").classList.remove("hidden");
+				} else if (ipv4) {
+					document.getElementById("ipv4").replaceChildren(securityInfo.usedPrivateDns ? certificateEmojis.shield : "", ...outputaddress(details.ip, url.hostname));
+					document.querySelector(".ipv4").classList.remove("hidden");
 				}
 			} else if (details.fromCache) {
 				const ip = document.getElementById("ip");
@@ -1106,29 +1165,34 @@ function updatePopup(tabId, tab) {
 						if (IPv4_RE.test(address)) {
 							ipv4s.push(address);
 						} else if (IPv6_RE.test(address)) {
-							ipv6s.push(address);
+							const aipv6 = ipv6toint(address);
+							if (NAT64PREFIXES.has(aipv6 >> 32n)) {
+								ipv4s.push(address);
+							} else {
+								ipv6s.push(address);
+							}
 						}
 					}
 					console.assert(ipv4s.length + ipv6s.length === record.addresses.length, "Error: Parsing IP addresses", record.addresses);
 
 					if (ipv4s.length) {
-						document.getElementById("ipv4").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv4s, url.hostname, details.ip, true, false);
+						document.getElementById("ipv4").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv4s, url.hostname, details.ip);
 						document.querySelector(".ipv4").classList.remove("hidden");
 					}
 					if (ipv6s.length) {
-						document.getElementById("ipv6").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv6s, url.hostname, details.ip, false, true);
+						document.getElementById("ipv6").innerHTML = (record.isTRR ? certificateEmojis.shield : "") + outputaddresses(ipv6s, url.hostname, details.ip);
 						document.querySelector(".ipv6").classList.remove("hidden");
 					}
 					document.querySelector(".cache").classList.add("hidden");
 
 					if (BLACKLIST) {
-						checkblacklists(url.hostname, ipv4s, ipv6s);
+						checkblacklists(url.hostname, record.addresses);
 					}
 					// console.log(ipv4, ipv6);
 				}).catch((/* error */) => {
 					// console.error(error);
 					if (BLACKLIST) {
-						checkblacklists(url.hostname, ipv4 && [details.ip], ipv6 && [details.ip]);
+						checkblacklists(url.hostname, details.ip && [details.ip]);
 					}
 				});
 			}
@@ -1140,7 +1204,7 @@ function updatePopup(tabId, tab) {
 
 	document.getElementById("code").textContent = details.statusLine ? outputstatus(details.statusCode) : emojis.information_source;
 	document.getElementById("line").textContent = details.statusLine ? details.statusLine + (details.statusCode in status_codes ? `  (${status_codes[details.statusCode]})` : "") : error ? "Error occurred for this page" : "Unavailable for this page";
-	document.getElementById("host").replaceChildren(...outputhost(url.hostname, HTTPS ? "https:" : url.protocol, ipv4, ipv6));
+	document.getElementById("host").replaceChildren(...outputhost(url.hostname, HTTPS ? "https:" : url.protocol));
 	if (details.responseHeaders) {
 		// console.log(details.responseHeaders);
 		const header = details.responseHeaders.find((e) => e.name.toLowerCase() === "server");
@@ -1319,6 +1383,7 @@ function getstatus(tabId) {
 					WARNDAYS,
 					FULLIPv6,
 					COMPACTIPv6,
+					NAT64PREFIXES,
 					OPEN,
 					BLOCKED,
 					HTTPS,
